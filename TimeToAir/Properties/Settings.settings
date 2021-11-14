@@ -1,0 +1,45 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Mooseware.TimeToAir.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="AtemIpAddress" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.0.240</Value>
+    </Setting>
+    <Setting Name="InputMP1Name" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">MP1</Value>
+    </Setting>
+    <Setting Name="InputMP2Name" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">MP2</Value>
+    </Setting>
+    <Setting Name="InputCountdownName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">COL1</Value>
+    </Setting>
+    <Setting Name="WallpaperFilespec" Type="System.String" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="XPosition" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="YPosition" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="TurnGreen" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">02:00</Value>
+    </Setting>
+    <Setting Name="TurnYellow" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">00:30</Value>
+    </Setting>
+    <Setting Name="EveningStart" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">20:00</Value>
+    </Setting>
+    <Setting Name="MorningStart" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">10:00</Value>
+    </Setting>
+    <Setting Name="LastCustomStart" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">19:00</Value>
+    </Setting>
+    <Setting Name="FontSize" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">64</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

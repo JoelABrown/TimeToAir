@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Mooseware.TimeToAir</RootNamespace>
+    <ApplicationIcon>Graphicloads-100-Flat-Clock.ico</ApplicationIcon>
+    <Authors>Joel Brown</Authors>
+    <Company>Mooseware Limited</Company>
+    <PackageIcon>Graphicloads-100-Flat-Clock.ico</PackageIcon>
+    <Description>Live stream countdown timer with ATEM auxiliary output control.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <COMReference Include="BMDSwitcherAPI">
+      <WrapperTool>tlbimp</WrapperTool>
+      <VersionMinor>0</VersionMinor>
+      <VersionMajor>1</VersionMajor>
+      <Guid>8a92b919-156c-4d61-94ef-03f9be4004b0</Guid>
+      <Lcid>0</Lcid>
+      <Isolated>false</Isolated>
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="Resources\Graphicloads-100-Flat-Clock.ico">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

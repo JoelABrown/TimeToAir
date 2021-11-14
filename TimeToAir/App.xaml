@@ -1,0 +1,20 @@
+﻿<Application x:Class="TimeToAir.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Mooseware.TimeToAir"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Styles/AppStyles.xaml" />
+                <ResourceDictionary Source="Themes/Styles/ButtonStyle.xaml" />
+                <ResourceDictionary Source="Themes/Styles/RunButtonStyle.xaml" />
+                <ResourceDictionary Source="Themes/Styles/TabItemStyle.xaml" />
+                <ResourceDictionary Source="Themes/Styles/GroupBoxStyle.xaml" />
+                <ResourceDictionary Source="Themes/Styles/LightEmittingDiodeStyle.xaml" />
+                <ResourceDictionary Source="Themes/Styles/CheckboxStyle.xaml" />
+                <ResourceDictionary Source="Themes/Styles/ComboBoxStyle.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>         
+    </Application.Resources>
+</Application>

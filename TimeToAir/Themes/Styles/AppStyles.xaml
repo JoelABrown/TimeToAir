@@ -1,0 +1,99 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:theme="clr-namespace:Mooseware.TimeToAir.Themes.Styles">
+    
+    <!--  Brushes  -->
+    <!--  General Colours  -->
+    <SolidColorBrush x:Key="VeryDarkBackgroundBrush"
+                     Color="#FF000000" />
+    <SolidColorBrush x:Key="DarkBackgroundBrush"
+                     Color="#FF333333" />
+    <SolidColorBrush x:Key="BrightForegroundBrush"
+                     Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="LightForegroundBrush"
+                     Color="#FFCCCCCC" />
+    <SolidColorBrush x:Key="SubduedForegroundBrush"
+                     Color="#FFAAAAAA" />
+    <!--  Specific Control Colours  -->
+    <SolidColorBrush x:Key="TextBoxBackgroundBrush"
+                     Color="#FF555555" />
+    <SolidColorBrush x:Key="TextBoxForegroundBrush"
+                     Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="TextBoxBorderBrush"
+                     Color="#FFA0A0A0" />
+    <!--  Specific Contextual Colours  -->
+    <SolidColorBrush x:Key="PlayingContrastBrush"
+                     Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="PlayingMainBrush"
+                     Color="#FFDD0000" />
+    <SolidColorBrush x:Key="CuedContrastBrush"
+                     Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="CuedMainBrush"
+                     Color="#FF00BB00" />
+    <SolidColorBrush x:Key="DisabledMainBrush"
+                     Color="#FF666666" />
+    <SolidColorBrush x:Key="DisabledContrastBrush"
+                     Color="#FF333333" />
+    <SolidColorBrush x:Key="CountdownWarningBrush"
+                     Color="#FFFFFF00" />
+    <SolidColorBrush x:Key="PlayingBackgroundBrush"
+                     Color="#38FF0000" />
+    <SolidColorBrush x:Key="PlayingBackgroundBorderBrush"
+                     Color="#88FF0000" />
+    <SolidColorBrush x:Key="CuedBackgroundBrush"
+                     Color="#2500FF00" />
+    <SolidColorBrush x:Key="CuedBackgroundBorderBrush"
+                     Color="#6600FF00" />
+    <SolidColorBrush x:Key="CountdownWarningBackgroundBrush"
+                     Color="#44FFFF00" />
+    <SolidColorBrush x:Key="CountdownWarningBackgroundBorderBrush"
+                     Color="#AAFF8800" />
+    <SolidColorBrush x:Key="CountdownNormalBackgroundBrush"
+                     Color="#00000000" />
+    <SolidColorBrush x:Key="CountdownNormalBackgroundBorderBrush"
+                     Color="#00000000" />
+    <SolidColorBrush x:Key="DisabledBackgroundBrush"
+                     Color="#BB121212" />
+
+    <!--  Implicit Control Style Overrides  -->
+    <!--<Style TargetType="{x:Type Border}" BasedOn="{StaticResource {x:Type Border}}">
+        <Setter Property="Background" Value="{StaticResource DarkBackgroundBrush}"/>
+    </Style>-->
+    <Style BasedOn="{StaticResource {x:Type TabControl}}"
+           TargetType="{x:Type TabControl}">
+        <Setter Property="Background"
+                Value="{StaticResource DarkBackgroundBrush}" />
+        <Setter Property="Foreground"
+                Value="{StaticResource LightForegroundBrush}" />
+    </Style>
+    <Style BasedOn="{StaticResource {x:Type Label}}"
+           TargetType="{x:Type Label}">
+        <Setter Property="Foreground"
+                Value="{StaticResource LightForegroundBrush}" />
+    </Style>
+    <Style BasedOn="{StaticResource {x:Type TextBox}}"
+           TargetType="{x:Type TextBox}">
+        <Setter Property="Background"
+                Value="{StaticResource TextBoxBackgroundBrush}" />
+        <Setter Property="Foreground"
+                Value="{StaticResource TextBoxForegroundBrush}" />
+        <Setter Property="BorderBrush"
+                Value="{StaticResource TextBoxBorderBrush}" />
+    </Style>
+    <Style BasedOn="{StaticResource {x:Type RadioButton}}"
+           TargetType="{x:Type RadioButton}">
+        <Setter Property="Foreground"
+                Value="{StaticResource LightForegroundBrush}" />
+    </Style>
+
+    <!--  Explicit Control Style Overrides  -->
+    <Style x:Key="TextBlockLabelStyle"
+           BasedOn="{StaticResource {x:Type TextBlock}}"
+           TargetType="{x:Type TextBlock}">
+        <Setter Property="Background"
+                Value="{StaticResource DarkBackgroundBrush}" />
+        <Setter Property="Foreground"
+                Value="{StaticResource LightForegroundBrush}" />
+    </Style>
+
+</ResourceDictionary>

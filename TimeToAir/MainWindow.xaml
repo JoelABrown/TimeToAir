@@ -1,0 +1,542 @@
+﻿<Window x:Class="Mooseware.TimeToAir.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ctrl="clr-namespace:Mooseware.TimeToAir.Controls"
+        xmlns:local="clr-namespace:TimeToAir"
+        mc:Ignorable="d"
+        Title="TimeToAir"
+        Height="330"
+        Width="620"
+        MinHeight="330"
+        MinWidth="620"
+        MaxHeight="330"
+        MaxWidth="900"
+        Background="{StaticResource DarkBackgroundBrush}"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
+    <TabControl x:Name="TabList"
+                TabStripPlacement="Bottom"
+                Margin="0,0,0,0">
+        <TabItem x:Name="CountdownTabItem"
+                 Header="Countdown">
+            <Grid x:Name="CountdownGrid">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0"
+                            Grid.Column="0"
+                            Orientation="Vertical"
+                            Margin="5,5,5,5">
+                    <GroupBox Header="Service Start">
+                        <StackPanel Orientation="Vertical">
+                            <RadioButton x:Name="ServiceStartEvening"
+                                         GroupName="ServiceStartOption"
+                                         Content="Evening 00:00"
+                                         VerticalAlignment="Center"
+                                         Margin="3,4,0,4"
+                                         Padding="3,-2,5,0"
+                                         IsChecked="True"
+                                         Checked="ServiceStartEvening_Checked" />
+                            <RadioButton x:Name="ServiceStartMorning"
+                                         GroupName="ServiceStartOption"
+                                         Content="Morning 00:00"
+                                         VerticalAlignment="Center"
+                                         Margin="3,4,0,4"
+                                         Padding="3,-1.5,5,0"
+                                         Checked="ServiceStartMorning_Checked" />
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="ServiceStartCustom"
+                                             GroupName="ServiceStartOption"
+                                             Content="Custom:"
+                                             VerticalAlignment="Center"
+                                             Margin="3,4,0,4"
+                                             Padding="3,-1.5,5,0"
+                                             Checked="ServiceStartCustom_Checked" />
+                                <TextBox x:Name="CustomStartTimeTextBox"
+                                         Width="40"
+                                         MaxHeight="21"
+                                         Margin="0,2,0,2"
+                                         HorizontalAlignment="Left"
+                                         Text="00:00"
+                                         TextAlignment="Left"
+                                         TextChanged="CustomStartTimeTextBox_TextChanged" />
+
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Viewer Window"
+                              Margin="0,5,0,0">
+                        <StackPanel Orientation="Vertical">
+                            <StackPanel Orientation="Horizontal">
+                                <ctrl:LightEmittingDiode x:Name="SwitcherReadinessLED"
+                                                         Width="17"
+                                                         Height="17"
+                                                         Margin="6,8,3,5"
+                                                         HorizontalAlignment="Center"
+                                                         VerticalAlignment="Center"
+                                                         BorderThickness="2"
+                                                         SelectedColour="White"
+                                                         IsOn="True" />
+                                <Label Content="Switcher readiness"
+                                       VerticalContentAlignment="Center" />
+                            </StackPanel>
+                            <CheckBox x:Name="FullScreenViewerCheckBox"
+                                      Content="Full screen viewer"
+                                      IsChecked="False"
+                                      Margin="6,5,0,5"
+                                      VerticalAlignment="Center"
+                                      Checked="FullScreenViewerCheckBox_Checked"
+                                      Unchecked="FullScreenViewerCheckBox_Unchecked" />
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+                <GroupBox Header="Countdown"
+                          Grid.Column="1"
+                          Grid.Row="0"
+                          Margin="5,5,5,5">
+                    <StackPanel Orientation="Vertical">
+                        <StackPanel Orientation="Horizontal" Margin="5,3,5,0">
+                            <Label Content="Current Time:"
+                                   FontSize="15"
+                                   Height="30"
+                                   VerticalAlignment="Center"
+                                   VerticalContentAlignment="Center"/>
+                            <TextBlock x:Name="CurrentTimeMessage"
+                                       Height="30"
+                                       Text="00:00:00"
+                                       Foreground="{StaticResource SubduedForegroundBrush}"
+                                       VerticalAlignment="Center"
+                                       FontSize="20" />
+                            <Label Content="Time to Air:"
+                                   FontSize="15"
+                                   Height="30"
+                                   Margin="30,0,0,0"
+                                   Foreground="{StaticResource BrightForegroundBrush}"
+                                   VerticalAlignment="Center"
+                                   VerticalContentAlignment="Center" />
+                            <TextBlock x:Name="TimeToAirMessage"
+                                       Height="30"
+                                       Text="00:00:00"
+                                       Foreground="{StaticResource BrightForegroundBrush}"
+                                       VerticalAlignment="Center"
+                                       FontSize="20" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Border x:Name="OnAirLightBorder"
+                                    Background="{StaticResource Button.Disabled.Background}"
+                                    BorderThickness="3"
+                                    BorderBrush="{StaticResource DisabledMainBrush}"
+                                    Width="180"
+                                    Height="100"
+                                    Margin="10,5,5,5"
+                                    VerticalAlignment="Center">
+                                <TextBlock  x:Name="OnAirLightText"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="40"
+                                            FontWeight="Bold"
+                                            Text="ON AIR" />
+                            </Border>
+                            <Button Name="RunButton"
+                                    Margin="10,5,5,5"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Click="RunButton_Click"
+                                    Width="180"
+                                    Content="     Show&#10;Countdown"
+                                    FontFamily="Segue"
+                                    FontSize="26"
+                                    IsEnabled="True"
+                                    FontWeight="Bold"
+                                    HorizontalContentAlignment="Center"
+                                    Style="{StaticResource RunButtonStyle}">                                
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+        </TabItem>
+        <TabItem x:Name="OptionsTabItem"
+                 Header="Options">
+            <Grid x:Name="OptionsGrid"
+                  Margin="10,5,10,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <GroupBox x:Name="AtemOptionsGroup"
+                          Header="ATEM Switcher Options"
+                          Grid.Column="0"
+                          Height="Auto">
+                    <Grid x:Name="AtemOptionsGrid"
+                          Margin="0,5,5,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="125" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Grid.Column="0"
+                               Content="ATEM IP Address" />
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="AtemIpAddressTextBox"
+                                     Width="95"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="192.168.0.240"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="AtemApiStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Label Grid.Row="1"
+                               Grid.Column="0"
+                               Content="Countdown Input" />
+                        <StackPanel Grid.Row="1"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="CountdownInputTextBox"
+                                     Width="95"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="PC4"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="CountdownInputStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Label Grid.Row="2"
+                               Grid.Column="0"
+                               Content="Media Player 1 Input" />
+                        <StackPanel Grid.Row="2"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="MP1InputTextBox"
+                                     Width="95"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="MP1"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="MP1StatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Label Grid.Row="3"
+                               Grid.Column="0"
+                               Content="Media Player 2 Input" />
+                        <StackPanel Grid.Row="3"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="MP2InputTextBox"
+                                     Width="95"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="MP2"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="MP2StatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Label Grid.Row="4"
+                               Grid.Column="0"
+                               Content="Auxillary Output" />
+                        <StackPanel Grid.Row="4"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="AuxOutputTextBox"
+                                     Width="95"
+                                     MaxHeight="21"
+                                     IsReadOnly="True"
+                                     IsEnabled="False"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="AUX"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="AuxOutStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Label Grid.Row="5"
+                               Grid.Column="0"
+                               Content="Preview Output" />
+                        <StackPanel Grid.Row="5"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="PvwOutputTextBox"
+                                     Width="95"
+                                     MaxHeight="21"
+                                     IsReadOnly="True"
+                                     IsEnabled="False"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="PVW"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="PvwOutStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Label Grid.Row="6"
+                               Grid.Column="0"
+                               Content="Program Output" />
+                        <StackPanel Grid.Row="6"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="PgmOutputTextBox"
+                                     Width="95"
+                                     MaxHeight="21"
+                                     IsReadOnly="True"
+                                     IsEnabled="False"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="PGM"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="PgmOutStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+                <GroupBox x:Name="CountdownOptionsGroup"
+                          Grid.Column="1"
+                          Grid.Row="0"
+                          Width="Auto"
+                          Height="Auto"
+                          Margin="10,0,0,0"
+                          Header="Countdown Options">
+                    <Grid x:Name="CountDownOptionsGrid"
+                          Margin="0,5,5,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Label Content="Evening Start"
+                               Grid.Column="0"
+                               Grid.Row="0" />
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="EveningServiceStartTimeTextBox"
+                                     Width="40"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="00:00"
+                                     TextAlignment="Left" />
+                            <Label Margin="5,0,0,0"
+                                   Content="HH:MM Use 24h clock" />
+                        </StackPanel>
+                        <Label Content="Morning Start"
+                               Grid.Column="0"
+                               Grid.Row="1" />
+                        <StackPanel Grid.Row="1"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="MorningServiceStartTimeTextBox"
+                                     Width="40"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="00:00"
+                                     TextAlignment="Left" />
+                        </StackPanel>
+                        <Label Content="Wallpaper"
+                               Grid.Column="0"
+                               Grid.Row="2" />
+                        <Grid Grid.Row="2"
+                              Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBox x:Name="WallpaperFilespecTextBox"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2" />
+                            <Button x:Name="ChooseWallpaperButton"
+                                    Grid.Column="1"
+                                    Grid.Row="0"
+                                    Height="21"
+                                    Width="21"
+                                    Margin="2,2,2,2"
+                                    HorizontalAlignment="Left"
+                                    Content="..."
+                                    Click="ChooseWallpaperButton_Click" />
+                        </Grid>
+                        <Label Content="Side Margin"
+                               Grid.Row="3"
+                               Grid.Column="0" />
+                        <StackPanel Grid.Row="3"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="XPositionTextBox"
+                                     Width="30"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="10"
+                                     TextAlignment="Left" />
+                            <Label Content="% of screen width from side"
+                                   Margin="5,0,0,0" />
+                        </StackPanel>
+                        <Label Content="Bottom Margin"
+                               Grid.Row="4"
+                               Grid.Column="0" />
+                        <StackPanel Grid.Row="4"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="YPositionTextBox"
+                                     Width="30"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="10"
+                                     TextAlignment="Left" />
+                            <Label Content="% of screen height from bottom"
+                                   Margin="5,0,0,0" />
+                        </StackPanel>
+                        <Label Content="Turn Green"
+                               Grid.Row="5"
+                               Grid.Column="0" />
+                        <StackPanel Grid.Row="5"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="TurnGreenTextBox"
+                                     Width="40"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="00:00"
+                                     TextAlignment="Left" />
+                            <Label Content="Turn Yellow"
+                                   Margin="20,0,10,0" />
+                            <TextBox x:Name="TurnYellowTextBox"
+                                     Width="40"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="00:00"
+                                     TextAlignment="Left" />
+                        </StackPanel>
+                        <Label Content="Font Size"
+                               Grid.Row="6"
+                               Grid.Column="0" />
+                        <StackPanel Grid.Row="6"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="FontSizeTextBox"
+                                     Width="30"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="64"
+                                     TextAlignment="Left" />
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+                <StackPanel x:Name="CommandButtonPanel"
+                            Orientation="Horizontal"
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top">
+                    <Button x:Name="RefreshAtemConnectionButton"
+                            Width="100"
+                            Height="30"
+                            Margin="3,10,10,0"
+                            Click="RefreshAtemConnectionButton_Click"
+                            Content="Refresh ATEM"
+                            Visibility="Visible" />
+                    <Button x:Name="ApplyOptionsButton"
+                            Width="100"
+                            Height="30"
+                            Margin="3,10,0,0"
+                            Click="ApplyOptionsButton_Click"
+                            Content="Apply Options"
+                            Visibility="Visible" />
+                </StackPanel>
+                
+            </Grid>
+        </TabItem>
+    </TabControl>
+</Window>
