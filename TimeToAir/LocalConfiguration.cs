@@ -21,5 +21,9 @@ namespace Mooseware.TimeToAir
         public int XPosition { get; set; }
         public int YPosition { get; set; }
         public int FontSize { get; set; }
+        public System.Drawing.Point WindowLocation { get; set; }
+        public System.Drawing.Size WindowSize { get; set; }
+        public bool RestoreWindowLocation { get; set; }
+        public bool FullScreenViewer { get; set; }
     }
 }

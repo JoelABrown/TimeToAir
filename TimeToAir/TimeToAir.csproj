@@ -2,14 +2,17 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Mooseware.TimeToAir</RootNamespace>
     <ApplicationIcon>Graphicloads-100-Flat-Clock.ico</ApplicationIcon>
     <Authors>Joel Brown</Authors>
     <Company>Mooseware Limited</Company>
     <PackageIcon>Graphicloads-100-Flat-Clock.ico</PackageIcon>
     <Description>Live stream countdown timer with ATEM auxiliary output control.</Description>
+    <Copyright>Copyright 2023 Mooseware Limited</Copyright>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

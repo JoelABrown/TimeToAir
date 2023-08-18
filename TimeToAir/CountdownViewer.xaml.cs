@@ -236,7 +236,7 @@ namespace Mooseware.TimeToAir
         {
             FormattedText formattedText = new("00:00",
                 CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight,
+                System.Windows.FlowDirection.LeftToRight,
                 new Typeface(CountdownTime.FontFamily, CountdownTime.FontStyle, CountdownTime.FontWeight, CountdownTime.FontStretch),
                 CountdownTime.FontSize,
                 Brushes.Black,

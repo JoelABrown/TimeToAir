@@ -51,6 +51,5 @@
                        VerticalAlignment="Center"
                        HorizontalAlignment="Center" />
         </Border>
-                
     </Grid>
 </Window>

@@ -219,6 +219,23 @@ namespace Mooseware.TimeToAir
                 LocalConfiguration.Settings.FontSize = Properties.Settings.Default.FontSize;
                 dirty = true;
             }
+            if (LocalConfiguration.Settings.WindowLocation.X == 0
+                && LocalConfiguration.Settings.WindowLocation.Y == 0)
+            {
+                LocalConfiguration.Settings.WindowLocation = new System.Drawing.Point(
+                    Properties.Settings.Default.WindowLocation.X,
+                    Properties.Settings.Default.WindowLocation.Y);
+                dirty = true;
+            }
+            if (LocalConfiguration.Settings.WindowSize.Width == 0
+                && LocalConfiguration.Settings.WindowSize.Height == 0)
+            {
+                LocalConfiguration.Settings.WindowSize = new System.Drawing.Size(
+                    Properties.Settings.Default.WindowSize.Width,
+                    Properties.Settings.Default.WindowSize.Height);
+                dirty = true;
+            }
+            // No need to initialize RestoreWindowLocation or FullScreenViewer
             if (dirty)
             {
                 LocalConfiguration.Save();
@@ -642,6 +659,28 @@ namespace Mooseware.TimeToAir
                 ServiceStartMorning.IsChecked = true;
             }
 
+            // Adjust the size, position and mode of the preview window according to the settings...
+            if (LocalConfiguration.Settings.RestoreWindowLocation)
+            {
+                _countdownViewer.Top = LocalConfiguration.Settings.WindowLocation.Y;
+                _countdownViewer.Left = LocalConfiguration.Settings.WindowLocation.X;
+                _countdownViewer.Height = LocalConfiguration.Settings.WindowSize.Height;
+                _countdownViewer.Width = LocalConfiguration.Settings.WindowSize.Width;
+
+                RestoreWindowLocationCheckbox.IsChecked = true;
+
+                if (LocalConfiguration.Settings.FullScreenViewer)
+                {
+                    FullScreenViewerCheckBox.IsChecked = true;
+                    _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Fullscreen);
+                }
+                else
+                {
+                    FullScreenViewerCheckBox.IsChecked = false;
+                    _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Normal);
+                }
+            }
+
             // Figure out the next on-air time...
             DetermineNextStartTime();
             // Start minding the time...
@@ -900,17 +939,36 @@ namespace Mooseware.TimeToAir
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            // Save viewer window settings before closing...
+            if (RestoreWindowLocationCheckbox.IsChecked?? false == true)
+            {
+                // Note the size, position and mode of the viewer window...
+                LocalConfiguration.Settings.WindowLocation = new System.Drawing.Point
+                    (Convert.ToInt32(_countdownViewer.Left), Convert.ToInt32(_countdownViewer.Top));
+                LocalConfiguration.Settings.WindowSize = new System.Drawing.Size
+                    (Convert.ToInt32(_countdownViewer.Width), Convert.ToInt32(_countdownViewer.Height));
+                LocalConfiguration.Settings.FullScreenViewer = FullScreenViewerCheckBox.IsChecked ?? false;
+            }
+            LocalConfiguration.Settings.RestoreWindowLocation = RestoreWindowLocationCheckbox.IsChecked ?? false;
+            LocalConfiguration.Save();
+
             _countdownViewer.ShutDownViewer();
         }
 
         private void FullScreenViewerCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Fullscreen);
+            if (_loaded)
+            {
+                _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Fullscreen);
+            }
         }
 
         private void FullScreenViewerCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Normal);
+            if (_loaded)
+            {
+                _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Normal);
+            }
         }
 
         private void RefreshAtemConnectionButton_Click(object sender, RoutedEventArgs e)
@@ -955,6 +1013,16 @@ namespace Mooseware.TimeToAir
             }
 
             return result;
+        }
+
+        private void RestoreWindowLocationCheckbox_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void RestoreWindowLocationCheckbox_Unchecked(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

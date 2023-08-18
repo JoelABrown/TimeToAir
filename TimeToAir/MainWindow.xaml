@@ -23,7 +23,7 @@
                  Header="Countdown">
             <Grid x:Name="CountdownGrid">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="180" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
@@ -94,6 +94,13 @@
                                       VerticalAlignment="Center"
                                       Checked="FullScreenViewerCheckBox_Checked"
                                       Unchecked="FullScreenViewerCheckBox_Unchecked" />
+                            <CheckBox x:Name="RestoreWindowLocationCheckbox"
+                                      Content="Restore viewer position"
+                                      IsChecked="False"
+                                      Margin="6,5,0,5"
+                                      VerticalAlignment="Center"
+                                      Checked="RestoreWindowLocationCheckbox_Checked"
+                                      Unchecked="RestoreWindowLocationCheckbox_Unchecked" />
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>
