@@ -235,7 +235,7 @@ namespace Mooseware.TimeToAir
                     Properties.Settings.Default.WindowSize.Height);
                 dirty = true;
             }
-            // No need to initialize RestoreWindowLocation or FullScreenViewer
+            // No need to initialize RestoreWindowLocation or FullScreenViewer or SuppressOnAirNotificationCheckbox
             if (dirty)
             {
                 LocalConfiguration.Save();
@@ -766,7 +766,7 @@ namespace Mooseware.TimeToAir
         /// </summary>
         private void SetOnAirDisplay()
         {
-            if (IsOnAir())
+            if (IsOnAir() && SuppressOnAirNotificationCheckbox.IsChecked == false)
             {
                 _countdownViewer.SetOnAir(true);
                 OnAirLightBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.PlayingMainBrush);
@@ -939,6 +939,9 @@ namespace Mooseware.TimeToAir
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            // If we're showing the countdown, then take that down so as not to leave things hanging...
+            ToggleRunningStatus(RunAction.ForceStop);
+
             // Save viewer window settings before closing...
             if (RestoreWindowLocationCheckbox.IsChecked?? false == true)
             {
@@ -950,6 +953,7 @@ namespace Mooseware.TimeToAir
                 LocalConfiguration.Settings.FullScreenViewer = FullScreenViewerCheckBox.IsChecked ?? false;
             }
             LocalConfiguration.Settings.RestoreWindowLocation = RestoreWindowLocationCheckbox.IsChecked ?? false;
+            LocalConfiguration.Settings.SuppressOnAirNotification = SuppressOnAirNotificationCheckbox.IsChecked ?? false;
             LocalConfiguration.Save();
 
             _countdownViewer.ShutDownViewer();
@@ -1023,6 +1027,16 @@ namespace Mooseware.TimeToAir
         private void RestoreWindowLocationCheckbox_Unchecked(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void SuppressOnAirNotificationCheckbox_Checked(object sender, RoutedEventArgs e)
+        {
+            SetOnAirDisplay();
+        }
+
+        private void SuppressOnAirNotificationCheckbox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SetOnAirDisplay();
         }
     }
 }

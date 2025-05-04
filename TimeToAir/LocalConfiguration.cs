@@ -25,5 +25,6 @@ namespace Mooseware.TimeToAir
         public System.Drawing.Size WindowSize { get; set; }
         public bool RestoreWindowLocation { get; set; }
         public bool FullScreenViewer { get; set; }
+        public bool SuppressOnAirNotification { get; set; }
     }
 }

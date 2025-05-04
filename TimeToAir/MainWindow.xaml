@@ -83,7 +83,7 @@
                                                          VerticalAlignment="Center"
                                                          BorderThickness="2"
                                                          SelectedColour="White"
-                                                         IsOn="True" />
+                                                         IsOn="False" />
                                 <Label Content="Switcher readiness"
                                        VerticalContentAlignment="Center" />
                             </StackPanel>
@@ -101,6 +101,13 @@
                                       VerticalAlignment="Center"
                                       Checked="RestoreWindowLocationCheckbox_Checked"
                                       Unchecked="RestoreWindowLocationCheckbox_Unchecked" />
+                            <CheckBox x:Name="SuppressOnAirNotificationCheckbox"
+                                      Content="Suppress on air sign"
+                                      IsChecked="False"
+                                      Margin="6,5,0,5"
+                                      VerticalAlignment="Center"
+                                      Checked="SuppressOnAirNotificationCheckbox_Checked"
+                                      Unchecked="SuppressOnAirNotificationCheckbox_Unchecked" />
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>
