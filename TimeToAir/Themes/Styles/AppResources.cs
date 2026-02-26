@@ -23,6 +23,7 @@ namespace Mooseware.TimeToAir.Themes.Styles
             CuedBackgroundBorderBrush,
             CuedContrastBrush,
             CuedMainBrush,
+            LightForegroundBrush,
             PlayingBackgroundBrush,
             PlayingBackgroundBorderBrush,
             PlayingMainBrush,
@@ -31,7 +32,20 @@ namespace Mooseware.TimeToAir.Themes.Styles
             DisabledContrastBrush,
             TextBoxForegroundBrush,
             DarkBackgroundBrush,
-            DisabledBackgroundBrush
+            DisabledBackgroundBrush,
+            PendingForegroundBrush,
+            PendingBackgroundBorderBrush,
+            CautionMainBrush,
+            CautionBackgroundBorderBrush,
+            ReadyMainBrush,
+            ReadyBackgroundBorderBrush,
+            MuteModeMainBrush,
+            MuteModeBorderBrush,
+            MuteModeBackgroundBorderBrush,
+            ManualModeMainBrush,
+            ManualModeBorderBrush,
+            ManualModeBackgroundBorderBrush,
+            SelectedPresetBorderBrush
         }
 
         internal static Brush DefinedColour(StaticResource colour)

@@ -12,7 +12,7 @@ namespace Mooseware.TimeToAir.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.10.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.14.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -23,156 +23,579 @@ namespace Mooseware.TimeToAir.Properties {
             }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("192.168.0.240")]
         public string AtemIpAddress {
             get {
                 return ((string)(this["AtemIpAddress"]));
             }
+            set {
+                this["AtemIpAddress"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("MP1")]
-        public string InputMP1Name {
+        public string InputTitleCardName {
             get {
-                return ((string)(this["InputMP1Name"]));
+                return ((string)(this["InputTitleCardName"]));
+            }
+            set {
+                this["InputTitleCardName"] = value;
             }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("MP2")]
-        public string InputMP2Name {
-            get {
-                return ((string)(this["InputMP2Name"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COL1")]
         public string InputCountdownName {
             get {
                 return ((string)(this["InputCountdownName"]));
             }
+            set {
+                this["InputCountdownName"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("T:\\Solel\\Livestream\\SolelTV_Wallpapers\\SolelTV_TitleCard_Pre-Service.png")]
         public string WallpaperFilespec {
             get {
                 return ((string)(this["WallpaperFilespec"]));
             }
+            set {
+                this["WallpaperFilespec"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("10")]
         public int XPosition {
             get {
                 return ((int)(this["XPosition"]));
             }
+            set {
+                this["XPosition"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("10")]
         public int YPosition {
             get {
                 return ((int)(this["YPosition"]));
             }
+            set {
+                this["YPosition"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("02:00")]
         public string TurnGreen {
             get {
                 return ((string)(this["TurnGreen"]));
             }
+            set {
+                this["TurnGreen"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("00:30")]
         public string TurnYellow {
             get {
                 return ((string)(this["TurnYellow"]));
             }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("20:00")]
-        public string EveningStart {
-            get {
-                return ((string)(this["EveningStart"]));
+            set {
+                this["TurnYellow"] = value;
             }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("10:00")]
-        public string MorningStart {
-            get {
-                return ((string)(this["MorningStart"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("19:00")]
-        public string LastCustomStart {
-            get {
-                return ((string)(this["LastCustomStart"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("64")]
         public int FontSize {
             get {
                 return ((int)(this["FontSize"]));
             }
+            set {
+                this["FontSize"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
         public global::System.Drawing.Point WindowLocation {
             get {
                 return ((global::System.Drawing.Point)(this["WindowLocation"]));
             }
+            set {
+                this["WindowLocation"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
         public global::System.Drawing.Size WindowSize {
             get {
                 return ((global::System.Drawing.Size)(this["WindowSize"]));
             }
+            set {
+                this["WindowSize"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool RestoreWindowLocation {
             get {
                 return ((bool)(this["RestoreWindowLocation"]));
             }
+            set {
+                this["RestoreWindowLocation"] = value;
+            }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool FullScreenViewer {
             get {
                 return ((bool)(this["FullScreenViewer"]));
+            }
+            set {
+                this["FullScreenViewer"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("CAM1")]
+        public string InputCam1Name {
+            get {
+                return ((string)(this["InputCam1Name"]));
+            }
+            set {
+                this["InputCam1Name"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("CAM2")]
+        public string InputCam2Name {
+            get {
+                return ((string)(this["InputCam2Name"]));
+            }
+            set {
+                this["InputCam2Name"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool SuppressOnAirNotification {
+            get {
+                return ((bool)(this["SuppressOnAirNotification"]));
+            }
+            set {
+                this["SuppressOnAirNotification"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AutomaticMode {
+            get {
+                return ((bool)(this["AutomaticMode"]));
+            }
+            set {
+                this["AutomaticMode"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool CountdownShown {
+            get {
+                return ((bool)(this["CountdownShown"]));
+            }
+            set {
+                this["CountdownShown"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int PtzDefaultAM {
+            get {
+                return ((int)(this["PtzDefaultAM"]));
+            }
+            set {
+                this["PtzDefaultAM"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.1.86")]
+        public string WebPresenterIpAddress {
+            get {
+                return ((string)(this["WebPresenterIpAddress"]));
+            }
+            set {
+                this["WebPresenterIpAddress"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.1.85")]
+        public string HyperDeckIpAddress {
+            get {
+                return ((string)(this["HyperDeckIpAddress"]));
+            }
+            set {
+                this["HyperDeckIpAddress"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.1.111")]
+        public string Camera1IpAddress {
+            get {
+                return ((string)(this["Camera1IpAddress"]));
+            }
+            set {
+                this["Camera1IpAddress"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.1.222")]
+        public string Camera2IpAddress {
+            get {
+                return ((string)(this["Camera2IpAddress"]));
+            }
+            set {
+                this["Camera2IpAddress"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("01:00")]
+        public string StartStreaming {
+            get {
+                return ((string)(this["StartStreaming"]));
+            }
+            set {
+                this["StartStreaming"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("00:10")]
+        public string StartRecording {
+            get {
+                return ((string)(this["StartRecording"]));
+            }
+            set {
+                this["StartRecording"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Join us as we welcome")]
+        public string StreamDescriptionShabbatPM {
+            get {
+                return ((string)(this["StreamDescriptionShabbatPM"]));
+            }
+            set {
+                this["StreamDescriptionShabbatPM"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Join us as we celebrate")]
+        public string StreamDescriptionShabbatAM {
+            get {
+                return ((string)(this["StreamDescriptionShabbatAM"]));
+            }
+            set {
+                this["StreamDescriptionShabbatAM"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Join us for the start of")]
+        public string StreamDescriptionFestivalPM {
+            get {
+                return ((string)(this["StreamDescriptionFestivalPM"]));
+            }
+            set {
+                this["StreamDescriptionFestivalPM"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Join us for the festival of")]
+        public string StreamDescriptionFestivalAM {
+            get {
+                return ((string)(this["StreamDescriptionFestivalAM"]));
+            }
+            set {
+                this["StreamDescriptionFestivalAM"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Solel_[title]_[yyyy-mm-dd]_[hh:mm]_")]
+        public string LocalRecordingName {
+            get {
+                return ((string)(this["LocalRecordingName"]));
+            }
+            set {
+                this["LocalRecordingName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Evening Regular")]
+        public string PtzSetup1Name {
+            get {
+                return ((string)(this["PtzSetup1Name"]));
+            }
+            set {
+                this["PtzSetup1Name"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int PtzSetup1Preview {
+            get {
+                return ((int)(this["PtzSetup1Preview"]));
+            }
+            set {
+                this["PtzSetup1Preview"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int PtzSetup1Cam1 {
+            get {
+                return ((int)(this["PtzSetup1Cam1"]));
+            }
+            set {
+                this["PtzSetup1Cam1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
+        public int PtzSetup1Cam2 {
+            get {
+                return ((int)(this["PtzSetup1Cam2"]));
+            }
+            set {
+                this["PtzSetup1Cam2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Evening Wide")]
+        public string PtzSetup2Name {
+            get {
+                return ((string)(this["PtzSetup2Name"]));
+            }
+            set {
+                this["PtzSetup2Name"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public int PtzSetup2Preview {
+            get {
+                return ((int)(this["PtzSetup2Preview"]));
+            }
+            set {
+                this["PtzSetup2Preview"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int PtzSetup2Cam1 {
+            get {
+                return ((int)(this["PtzSetup2Cam1"]));
+            }
+            set {
+                this["PtzSetup2Cam1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int PtzSetup2Cam2 {
+            get {
+                return ((int)(this["PtzSetup2Cam2"]));
+            }
+            set {
+                this["PtzSetup2Cam2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Morning Regular")]
+        public string PtzSetup3Name {
+            get {
+                return ((string)(this["PtzSetup3Name"]));
+            }
+            set {
+                this["PtzSetup3Name"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int PtzSetup3Preview {
+            get {
+                return ((int)(this["PtzSetup3Preview"]));
+            }
+            set {
+                this["PtzSetup3Preview"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int PtzSetup3Cam1 {
+            get {
+                return ((int)(this["PtzSetup3Cam1"]));
+            }
+            set {
+                this["PtzSetup3Cam1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int PtzSetup3Cam2 {
+            get {
+                return ((int)(this["PtzSetup3Cam2"]));
+            }
+            set {
+                this["PtzSetup3Cam2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Morning Wide")]
+        public string PtzSetup4Name {
+            get {
+                return ((string)(this["PtzSetup4Name"]));
+            }
+            set {
+                this["PtzSetup4Name"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public int PtzSetup4Preview {
+            get {
+                return ((int)(this["PtzSetup4Preview"]));
+            }
+            set {
+                this["PtzSetup4Preview"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int PtzSetup4Cam1 {
+            get {
+                return ((int)(this["PtzSetup4Cam1"]));
+            }
+            set {
+                this["PtzSetup4Cam1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int PtzSetup4Cam2 {
+            get {
+                return ((int)(this["PtzSetup4Cam2"]));
+            }
+            set {
+                this["PtzSetup4Cam2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ShutDownAfterGoLive {
+            get {
+                return ((bool)(this["ShutDownAfterGoLive"]));
+            }
+            set {
+                this["ShutDownAfterGoLive"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int PtzDefaultPM {
+            get {
+                return ((int)(this["PtzDefaultPM"]));
+            }
+            set {
+                this["PtzDefaultPM"] = value;
             }
         }
     }

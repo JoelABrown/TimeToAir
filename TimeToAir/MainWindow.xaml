@@ -4,204 +4,446 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ctrl="clr-namespace:Mooseware.TimeToAir.Controls"
-        xmlns:local="clr-namespace:TimeToAir"
+        xmlns:local="clr-namespace:Mooseware.TimeToAir"
         mc:Ignorable="d"
         Title="TimeToAir"
-        Height="330"
-        Width="620"
-        MinHeight="330"
-        MinWidth="620"
-        MaxHeight="330"
-        MaxWidth="900"
+        Height="470"
+        Width="670"
+        MinHeight="470"
+        MinWidth="670"
+        MaxHeight="470"
+        MaxWidth="670"
         Background="{StaticResource DarkBackgroundBrush}"
         Loaded="Window_Loaded"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        Icon="/Resources/TimeToAirIcon.png">
     <TabControl x:Name="TabList"
                 TabStripPlacement="Bottom"
                 Margin="0,0,0,0">
-        <TabItem x:Name="CountdownTabItem"
+        <TabItem x:Name="CountdownTab"
                  Header="Countdown">
-            <Grid x:Name="CountdownGrid">
+            <Grid x:Name="CountdownContainerGrid"
+                  Margin="8 5">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="180" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0"
-                            Grid.Column="0"
-                            Orientation="Vertical"
-                            Margin="5,5,5,5">
-                    <GroupBox Header="Service Start">
-                        <StackPanel Orientation="Vertical">
-                            <RadioButton x:Name="ServiceStartEvening"
-                                         GroupName="ServiceStartOption"
-                                         Content="Evening 00:00"
-                                         VerticalAlignment="Center"
-                                         Margin="3,4,0,4"
-                                         Padding="3,-2,5,0"
-                                         IsChecked="True"
-                                         Checked="ServiceStartEvening_Checked" />
-                            <RadioButton x:Name="ServiceStartMorning"
-                                         GroupName="ServiceStartOption"
-                                         Content="Morning 00:00"
-                                         VerticalAlignment="Center"
-                                         Margin="3,4,0,4"
-                                         Padding="3,-1.5,5,0"
-                                         Checked="ServiceStartMorning_Checked" />
-                            <StackPanel Orientation="Horizontal">
-                                <RadioButton x:Name="ServiceStartCustom"
-                                             GroupName="ServiceStartOption"
-                                             Content="Custom:"
-                                             VerticalAlignment="Center"
-                                             Margin="3,4,0,4"
-                                             Padding="3,-1.5,5,0"
-                                             Checked="ServiceStartCustom_Checked" />
-                                <TextBox x:Name="CustomStartTimeTextBox"
-                                         Width="40"
-                                         MaxHeight="21"
-                                         Margin="0,2,0,2"
-                                         HorizontalAlignment="Left"
-                                         Text="00:00"
-                                         TextAlignment="Left"
-                                         TextChanged="CustomStartTimeTextBox_TextChanged" />
-
-                            </StackPanel>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Viewer Window"
-                              Margin="0,5,0,0">
-                        <StackPanel Orientation="Vertical">
-                            <StackPanel Orientation="Horizontal">
-                                <ctrl:LightEmittingDiode x:Name="SwitcherReadinessLED"
-                                                         Width="17"
-                                                         Height="17"
-                                                         Margin="6,8,3,5"
-                                                         HorizontalAlignment="Center"
-                                                         VerticalAlignment="Center"
-                                                         BorderThickness="2"
-                                                         SelectedColour="White"
-                                                         IsOn="False" />
-                                <Label Content="Switcher readiness"
-                                       VerticalContentAlignment="Center" />
-                            </StackPanel>
-                            <CheckBox x:Name="FullScreenViewerCheckBox"
-                                      Content="Full screen viewer"
-                                      IsChecked="False"
-                                      Margin="6,5,0,5"
-                                      VerticalAlignment="Center"
-                                      Checked="FullScreenViewerCheckBox_Checked"
-                                      Unchecked="FullScreenViewerCheckBox_Unchecked" />
-                            <CheckBox x:Name="RestoreWindowLocationCheckbox"
-                                      Content="Restore viewer position"
-                                      IsChecked="False"
-                                      Margin="6,5,0,5"
-                                      VerticalAlignment="Center"
-                                      Checked="RestoreWindowLocationCheckbox_Checked"
-                                      Unchecked="RestoreWindowLocationCheckbox_Unchecked" />
-                            <CheckBox x:Name="SuppressOnAirNotificationCheckbox"
-                                      Content="Suppress on air sign"
-                                      IsChecked="False"
-                                      Margin="6,5,0,5"
-                                      VerticalAlignment="Center"
-                                      Checked="SuppressOnAirNotificationCheckbox_Checked"
-                                      Unchecked="SuppressOnAirNotificationCheckbox_Unchecked" />
-                        </StackPanel>
-                    </GroupBox>
-                </StackPanel>
-                <GroupBox Header="Countdown"
-                          Grid.Column="1"
+                <GroupBox x:Name="CountdownHeroGroupBox"
+                          Header="Countdown"
                           Grid.Row="0"
-                          Margin="5,5,5,5">
-                    <StackPanel Orientation="Vertical">
-                        <StackPanel Orientation="Horizontal" Margin="5,3,5,0">
-                            <Label Content="Current Time:"
-                                   FontSize="15"
-                                   Height="30"
-                                   VerticalAlignment="Center"
-                                   VerticalContentAlignment="Center"/>
-                            <TextBlock x:Name="CurrentTimeMessage"
-                                       Height="30"
-                                       Text="00:00:00"
-                                       Foreground="{StaticResource SubduedForegroundBrush}"
-                                       VerticalAlignment="Center"
-                                       FontSize="20" />
-                            <Label Content="Time to Air:"
-                                   FontSize="15"
-                                   Height="30"
-                                   Margin="30,0,0,0"
-                                   Foreground="{StaticResource BrightForegroundBrush}"
-                                   VerticalAlignment="Center"
-                                   VerticalContentAlignment="Center" />
-                            <TextBlock x:Name="TimeToAirMessage"
-                                       Height="30"
-                                       Text="00:00:00"
-                                       Foreground="{StaticResource BrightForegroundBrush}"
-                                       VerticalAlignment="Center"
-                                       FontSize="20" />
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <Border x:Name="OnAirLightBorder"
-                                    Background="{StaticResource Button.Disabled.Background}"
-                                    BorderThickness="3"
-                                    BorderBrush="{StaticResource DisabledMainBrush}"
-                                    Width="180"
-                                    Height="100"
-                                    Margin="10,5,5,5"
-                                    VerticalAlignment="Center">
-                                <TextBlock  x:Name="OnAirLightText"
+                          Grid.Column="0">
+                    <Grid x:Name="CountdownHeroGrid"
+                          Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="10" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="10" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="StatusIndicatorBorder"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Background="{StaticResource Button.Disabled.Background}"
+                                BorderThickness="3"
+                                BorderBrush="{StaticResource DisabledMainBrush}"
+                                Width="100"
+                                Height="100"
+                                MouseDown="StatusIndicatorBorder_MouseDown">
+                            <Grid>
+                                <TextBlock  x:Name="StatusLightCaptionText"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Top"
+                                            Margin="0 4 0 0"
+                                            FontSize="12"
+                                            FontWeight="Bold"
+                                            Text="Status" />
+                                <TextBlock  x:Name="StatusLightText"
                                             Foreground="{StaticResource DisabledMainBrush}"
                                             HorizontalAlignment="Center"
                                             VerticalAlignment="Center"
-                                            FontSize="40"
+                                            FontSize="22"
                                             FontWeight="Bold"
-                                            Text="ON AIR" />
-                            </Border>
-                            <Button Name="RunButton"
-                                    Margin="10,5,5,5"
+                                            Text="Caution" />
+                            </Grid>
+                        </Border>
+                        <Border x:Name="ModeIndicatorBorder"
+                                Grid.Row="0"
+                                Grid.Column="2"
+                                Background="{StaticResource Button.Disabled.Background}"
+                                BorderThickness="3"
+                                BorderBrush="{StaticResource DisabledMainBrush}"
+                                Width="100"
+                                Height="100"
+                                MouseDown="ModeIndicatorBorder_MouseDown">
+                            <Grid>
+                                <TextBlock  x:Name="ModeLightCaptionText"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Top"
+                                            Margin="0 4 0 0"
+                                            FontSize="12"
+                                            FontWeight="Bold"
+                                            Text="Go Live Mode" />
+                                <TextBlock  x:Name="ModeLightText"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="22"
+                                            FontWeight="Bold"
+                                            Text="Manual" />
+                            </Grid>
+                        </Border>
+                        <Border x:Name="CountdownIndicatorBorder"
+                                Grid.Row="0"
+                                Grid.Column="4"
+                                Background="{StaticResource Button.Disabled.Background}"
+                                BorderThickness="3"
+                                BorderBrush="{StaticResource DisabledMainBrush}"
+                                Width="100"
+                                Height="100"
+                                MouseDown="CountdownIndicatorBorder_MouseDown">
+                            <Grid>
+                                <TextBlock  x:Name="CountdownLightCaptionText"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Top"
+                                            Margin="0 4 0 0"
+                                            FontSize="12"
+                                            FontWeight="Bold"
+                                            Text="Countdown" />
+                                <TextBlock  x:Name="CountdownLightText"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="22"
+                                            FontWeight="Bold"
+                                            Text="Hidden" />
+                            </Grid>
+                        </Border>
+                        <Border x:Name="TimeToAirIndicatorBorder"
+                                Grid.Row="0"
+                                Grid.Column="6"
+                                Background="{StaticResource Button.Disabled.Background}"
+                                BorderThickness="3"
+                                BorderBrush="{StaticResource DisabledMainBrush}"
+                                Width="210"
+                                Height="100">
+                            <Grid>
+                                <TextBlock  x:Name="TimeToAirLightCaptionText"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Top"
+                                            Margin="0 4 0 0"
+                                            FontSize="12"
+                                            FontWeight="Bold"
+                                            Text="Time to Air" />
+                                <TextBlock  x:Name="TimeToAirMessage"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="48"
+                                            FontWeight="Bold"
+                                            Text="TBD" />
+                            </Grid>
+                        </Border>
+                        <Button Name="TestStatusButton"
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Click="TestStatusButton_Click"
+                                Width="100"
+                                Height="50"
+                                Content="Test"
+                                FontSize="22"
+                                IsEnabled="False"
+                                FontWeight="Bold"
+                                HorizontalContentAlignment="Center"
+                                Style="{StaticResource RunButtonStyle}" />
+                        <Button Name="GoLiveModeButton"
+                                Grid.Row="2"
+                                Grid.Column="2"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Click="GoLiveModeButton_Click"
+                                Width="100"
+                                Height="50"
+                                Content="Mode"
+                                FontSize="22"
+                                IsEnabled="False"
+                                FontWeight="Bold"
+                                HorizontalContentAlignment="Center"
+                                Style="{StaticResource RunButtonStyle}" />
+                        <Button Name="RunButton"
+                                Grid.Row="2"
+                                Grid.Column="4"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                IsEnabled="False"
+                                Click="RunButton_Click"
+                                Width="100"
+                                Height="50"
+                                Content="Show"
+                                FontSize="22"
+                                FontWeight="Bold"
+                                HorizontalContentAlignment="Center"
+                                Style="{StaticResource RunButtonStyle}" />
+                        <Border x:Name="OnAirLightBorder"
+                                Grid.Row="2"
+                                Grid.Column="6"
+                                Background="{StaticResource Button.Disabled.Background}"
+                                BorderThickness="3"
+                                BorderBrush="{StaticResource DisabledMainBrush}"
+                                Width="120"
+                                Height="50"
+                                Margin="10,5,5,5"
+                                VerticalAlignment="Center">
+                            <TextBlock  x:Name="OnAirLightText"
+                                        Foreground="{StaticResource DisabledMainBrush}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        FontSize="26"
+                                        FontWeight="Bold"
+                                        Text="ON AIR" />
+                        </Border>
+                        <StackPanel Orientation="Horizontal"
+                                    Grid.Row="4"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="7">
+                            <TextBlock  x:Name="NextStreamCountdownLabelText"
+                                        Foreground="{StaticResource DisabledMainBrush}"
+                                        FontSize="16"
+                                        FontWeight="SemiBold"
+                                        Text="Next scheduled livestream:" />
+                            <TextBlock  x:Name="NextStreamCountdownText"
+                                        Foreground="{StaticResource DisabledMainBrush}"
+                                        Margin="12 0 0 0"
+                                        FontSize="16"
+                                        FontWeight="Bold"
+                                        TextTrimming="CharacterEllipsis"
+                                        Text="(Next livestream to be determined)"
+                                        MaxWidth="425" />
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+                <Grid x:Name="CountdownControlsGrid"
+                      Grid.Row="1"
+                      Grid.Column="0"
+                      Margin="0 5 0 0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <GroupBox x:Name="StartingCamPresetGroupBox"
+                              Header="Starting Camera Presets"
+                              Grid.Row="0"
+                              Grid.Column="0"
+                              Margin="0 0 8 0">
+                        <Grid x:Name="StartingPtzSetupGrid"
+                              Margin="5 8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Name="PtzPreset1SetButton"
+                                    Grid.Row="0"
+                                    Grid.Column="0"
                                     HorizontalAlignment="Stretch"
                                     VerticalAlignment="Stretch"
-                                    Click="RunButton_Click"
-                                    Width="180"
-                                    Content="     Show&#10;Countdown"
-                                    FontFamily="Segue"
-                                    FontSize="26"
-                                    IsEnabled="True"
-                                    FontWeight="Bold"
+                                    Click="PtzPreset1SetButton_Click"
+                                    Width="80"
+                                    Height="70"
+                                    IsEnabled="False"
                                     HorizontalContentAlignment="Center"
-                                    Style="{StaticResource RunButtonStyle}">                                
+                                    Style="{StaticResource RunButtonStyle}">
+                                <TextBlock x:Name="SetPtzSetup1ButtonText"
+                                           FontWeight="SemiBold"
+                                           FontSize="16"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Text="Setup 1"
+                                           Foreground="{StaticResource Button.Disabled.Foreground}" />
                             </Button>
-                        </StackPanel>
-                    </StackPanel>
-                </GroupBox>
+                            <Button Name="PtzPreset2SetButton"
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    Margin="8 0 0 0"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Click="PtzPreset2SetButton_Click"
+                                    Width="80"
+                                    Height="70"
+                                    IsEnabled="False"
+                                    HorizontalContentAlignment="Center"
+                                    Style="{StaticResource RunButtonStyle}">
+                                <TextBlock x:Name="SetPtzSetup2ButtonText"
+                                           FontWeight="SemiBold"
+                                           FontSize="16"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Text="Setup 2"
+                                           Foreground="{StaticResource Button.Disabled.Foreground}" />
+                            </Button>
+                            <Button Name="PtzPreset3SetButton"
+                                    Grid.Row="0"
+                                    Grid.Column="2"
+                                    Margin="8 0 0 0"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Click="PtzPreset3SetButton_Click"
+                                    Width="80"
+                                    Height="70"
+                                    IsEnabled="False"
+                                    HorizontalContentAlignment="Center"
+                                    Style="{StaticResource RunButtonStyle}">
+                                <TextBlock x:Name="SetPtzSetup3ButtonText"
+                                           FontWeight="SemiBold"
+                                           FontSize="16"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Text="Setup 3"
+                                           Foreground="{StaticResource Button.Disabled.Foreground}" />
+                            </Button>
+                            <Button Name="PtzPreset4SetButton"
+                                    Grid.Row="0"
+                                    Grid.Column="3"
+                                    Margin="8 0 0 0"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Click="PtzPreset4SetButton_Click"
+                                    Width="80"
+                                    Height="70"
+                                    IsEnabled="False"
+                                    HorizontalContentAlignment="Center"
+                                    Style="{StaticResource RunButtonStyle}">
+                                <TextBlock x:Name="SetPtzSetup4ButtonText"
+                                           FontWeight="SemiBold"
+                                           FontSize="16"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Text="Setup 4"
+                                           Foreground="{StaticResource Button.Disabled.Foreground}" />
+                            </Button>
+                            <StackPanel Orientation="Vertical"
+                                        Grid.Row="0"
+                                        Grid.Column="4"
+                                        Margin="14 0 0 0"
+                                        VerticalAlignment="Center">
+                                <TextBlock x:Name="PtzPresetCamera1Label"
+                                           Text="Camera 1:"
+                                           Foreground="{StaticResource DisabledMainBrush}"
+                                           FontSize="16"
+                                           FontWeight="Normal" />
+                                <TextBlock x:Name="PtzPresetCamera2Label"
+                                           Text="Camera 2:"
+                                           Foreground="{StaticResource DisabledMainBrush}"
+                                           FontSize="16"
+                                           FontWeight="Normal" />
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical"
+                                        Grid.Row="0"
+                                        Grid.Column="5"
+                                        Margin="4 0 0 0"
+                                        VerticalAlignment="Center">
+                                <TextBlock x:Name="PtzPresetCamera1Preset"
+                                           Foreground="{StaticResource DisabledMainBrush}"
+                                           FontSize="16"
+                                           FontWeight="Normal"><Run Text="Preset " /><Run Language="en-ca"
+                                                                                          Text="-" /></TextBlock>
+                                <TextBlock x:Name="PtzPresetCamera2Preset"
+                                           Foreground="{StaticResource DisabledMainBrush}"
+                                           FontSize="16"
+                                           FontWeight="Normal"><Run Text="Preset " /><Run Language="en-ca"
+                                                                                          Text="-" /></TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                    <GroupBox x:Name="CountdownSoundGroupBox"
+                              Header="Sound"
+                              Grid.Row="0"
+                              Grid.Column="2">
+                        <Border x:Name="SoundIndicatorBorder"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="4"
+                                Background="{StaticResource Button.Disabled.Background}"
+                                BorderThickness="3"
+                                BorderBrush="{StaticResource DisabledMainBrush}"
+                                Width="80"
+                                Height="80"
+                                MouseDown="SoundIndicatorBorder_MouseDown">
+                            <Grid>
+                                <TextBlock  x:Name="SoundLightText"
+                                            Foreground="{StaticResource DisabledMainBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="22"
+                                            FontWeight="Bold"
+                                            Text="Mute" />
+                            </Grid>
+                        </Border>
+                    </GroupBox>
+                </Grid>
             </Grid>
         </TabItem>
-        <TabItem x:Name="OptionsTabItem"
-                 Header="Options">
-            <Grid x:Name="OptionsGrid"
-                  Margin="10,5,10,10">
+        <TabItem x:Name="ConnectionsTab"
+                 Header="Connections">
+            <Grid x:Name="ConnectionsContainerGrid"
+                  Margin="8 5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <GroupBox x:Name="AtemOptionsGroup"
-                          Header="ATEM Switcher Options"
+                          Header="Video Switcher Connection"
                           Grid.Column="0"
-                          Height="Auto">
+                          Grid.Row="0"
+                          Grid.RowSpan="3">
                     <Grid x:Name="AtemOptionsGrid"
                           Margin="0,5,5,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="125" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -258,18 +500,18 @@
                         </StackPanel>
                         <Label Grid.Row="2"
                                Grid.Column="0"
-                               Content="Media Player 1 Input" />
+                               Content="Title Card Input" />
                         <StackPanel Grid.Row="2"
                                     Grid.Column="1"
                                     Orientation="Horizontal">
-                            <TextBox x:Name="MP1InputTextBox"
+                            <TextBox x:Name="TitleCardInputTextBox"
                                      Width="95"
                                      MaxHeight="21"
                                      Margin="0,2,0,2"
                                      HorizontalAlignment="Left"
                                      Text="MP1"
                                      TextAlignment="Left" />
-                            <ctrl:LightEmittingDiode x:Name="MP1StatusLed"
+                            <ctrl:LightEmittingDiode x:Name="TitleCardStatusLed"
                                                      Width="17"
                                                      Height="17"
                                                      Margin="6,0,0,0"
@@ -281,18 +523,18 @@
                         </StackPanel>
                         <Label Grid.Row="3"
                                Grid.Column="0"
-                               Content="Media Player 2 Input" />
+                               Content="Camera 1 Input" />
                         <StackPanel Grid.Row="3"
                                     Grid.Column="1"
                                     Orientation="Horizontal">
-                            <TextBox x:Name="MP2InputTextBox"
+                            <TextBox x:Name="Camera1InputTextBox"
                                      Width="95"
                                      MaxHeight="21"
                                      Margin="0,2,0,2"
                                      HorizontalAlignment="Left"
-                                     Text="MP2"
+                                     Text="CAM1"
                                      TextAlignment="Left" />
-                            <ctrl:LightEmittingDiode x:Name="MP2StatusLed"
+                            <ctrl:LightEmittingDiode x:Name="Cam1StatusLed"
                                                      Width="17"
                                                      Height="17"
                                                      Margin="6,0,0,0"
@@ -304,8 +546,31 @@
                         </StackPanel>
                         <Label Grid.Row="4"
                                Grid.Column="0"
-                               Content="Auxillary Output" />
+                               Content="Camera 2 Input" />
                         <StackPanel Grid.Row="4"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="Camera2InputTextBox"
+                                     Width="95"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="CAM2"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="Cam2StatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Label Grid.Row="5"
+                               Grid.Column="0"
+                               Content="Auxillary Output" />
+                        <StackPanel Grid.Row="5"
                                     Grid.Column="1"
                                     Orientation="Horizontal">
                             <TextBox x:Name="AuxOutputTextBox"
@@ -327,10 +592,10 @@
                                                      SelectedColour="White"
                                                      IsOn="False" />
                         </StackPanel>
-                        <Label Grid.Row="5"
+                        <Label Grid.Row="6"
                                Grid.Column="0"
                                Content="Preview Output" />
-                        <StackPanel Grid.Row="5"
+                        <StackPanel Grid.Row="6"
                                     Grid.Column="1"
                                     Orientation="Horizontal">
                             <TextBox x:Name="PvwOutputTextBox"
@@ -352,10 +617,10 @@
                                                      SelectedColour="White"
                                                      IsOn="False" />
                         </StackPanel>
-                        <Label Grid.Row="6"
+                        <Label Grid.Row="7"
                                Grid.Column="0"
                                Content="Program Output" />
-                        <StackPanel Grid.Row="6"
+                        <StackPanel Grid.Row="7"
                                     Grid.Column="1"
                                     Orientation="Horizontal">
                             <TextBox x:Name="PgmOutputTextBox"
@@ -377,16 +642,515 @@
                                                      SelectedColour="White"
                                                      IsOn="False" />
                         </StackPanel>
+                        <Button x:Name="RefreshAtemConnectionButton"
+                                Width="24"
+                                Height="24"
+                                Margin="10 0 0 0"
+                                Grid.Row="0"
+                                Grid.Column="2"
+                                HorizontalAlignment="Right"
+                                Click="RefreshAtemConnectionButton_Click"
+                                ToolTip="Refresh ATEM Connection"
+                                Visibility="Visible">
+                            <Image Source="/Resources/Refresh-Button-Icon.png"
+                                   Stretch="Fill" />
+                        </Button>
                     </Grid>
                 </GroupBox>
-                <GroupBox x:Name="CountdownOptionsGroup"
-                          Grid.Column="1"
+                <GroupBox x:Name="WebPresenterOptionsGroup"
+                          Header="Streaming Bridge Connection"
+                          Grid.Row="0"
+                          Grid.Column="2">
+                    <Grid x:Name="WebPresenterOptionsGrid"
+                          Margin="0,5,5,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Grid.Column="0"
+                               Content="WebPresenter IP Address" />
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="WebPresenterIpAddressTextBox"
+                                     Width="95"
+                                     Height="21"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="192.168.0.240"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="WebPresenterApiStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Button x:Name="RefreshWebPresenterConnectionButton"
+                                Width="26"
+                                Height="26"
+                                Margin="10 0 0 0"
+                                Grid.Row="0"
+                                Grid.Column="2"
+                                HorizontalAlignment="Left"
+                                Click="RefreshWebPresenterConnectionButton_Click"
+                                ToolTip="Refresh WebPresenter Connection"
+                                Visibility="Visible">
+                            <Image Source="/Resources/Refresh-Button-Icon.png"
+                                   Stretch="Fill" />
+                        </Button>
+                    </Grid>
+                </GroupBox>
+                <GroupBox x:Name="HyperDeckOptionsGroup"
+                          Header="Recorder Connection"
+                          Grid.Row="1"
+                          Grid.Column="2"
+                          Margin="0 4 0 0">
+                    <Grid x:Name="HyperDeckOptionsGrid"
+                          Margin="0,5,5,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Grid.Column="0"
+                               Content="HyperDeck IP Address" />
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="HyperDeckIpAddressTextBox"
+                                     Width="95"
+                                     Height="21"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="192.168.0.240"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="HyperDeckApiStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Button x:Name="RefreshHyperDeckConnectionButton"
+                                Width="26"
+                                Height="26"
+                                Margin="10 0 0 0"
+                                Grid.Row="0"
+                                Grid.Column="2"
+                                HorizontalAlignment="Left"
+                                Click="RefreshHyperDeckConnectionButton_Click"
+                                ToolTip="Refresh HyperDeck Connection"
+                                Visibility="Visible">
+                            <Image Source="/Resources/Refresh-Button-Icon.png"
+                                   Stretch="Fill" />
+                        </Button>
+                        <Label Content="SD Card Space"
+                               Grid.Row="1"
+                               Grid.Column="0" />
+                        <StackPanel x:Name="SdCardSpaceStackPanel"
+                                    Orientation="Horizontal"
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    Grid.ColumnSpan="2">
+                            <ctrl:LightEmittingDiode x:Name="SdCard1SpaceStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="0,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                            <Label Content="Card 1" />
+                            <ctrl:LightEmittingDiode x:Name="SdCard2SpaceStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="8,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                            <Label Content="Card 2" />
+                        </StackPanel>
+                        <Label Grid.Row="2"
+                               Grid.Column="0"
+                               Content="Recording Capacity" />
+                        <StackPanel Grid.Row="2"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="RecordingCapacityTextBox"
+                                     Width="35"
+                                     Height="21"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     IsReadOnly="True"
+                                     IsEnabled="False"
+                                     Text="TBD"
+                                     TextAlignment="Left" />
+                            <Label Content="minutes" />
+                            <ctrl:LightEmittingDiode x:Name="RecordingCapacityStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+                <GroupBox x:Name="PtzCameraConnectionGroup"
+                          Header="PTZ Camera Connections"
+                          Grid.Row="2"
+                          Grid.Column="2"
+                          Margin="0 4 0 0">
+                    <Grid x:Name="PtzCameraConnectionsGrid"
+                          Margin="0,5,5,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Grid.Column="0"
+                               Content="Camera 1 IP Address" />
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="Camera1IpAddressTextBox"
+                                     Width="95"
+                                     Height="21"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="192.168.1.111"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="Camera1ConnectionStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                        <Button x:Name="RefreshPtzCameraConnectionsButton"
+                                Width="26"
+                                Height="26"
+                                Margin="10 0 0 0"
+                                Grid.Row="0"
+                                Grid.Column="2"
+                                HorizontalAlignment="Left"
+                                Click="RefreshPtzCameraConnectionsButton_Click"
+                                ToolTip="Refresh PTZ Camera Connections"
+                                Visibility="Visible">
+                            <Image Source="/Resources/Refresh-Button-Icon.png"
+                                   Stretch="Fill" />
+                        </Button>
+                        <Label Grid.Row="1"
+                               Grid.Column="0"
+                               Content="Camera 2 IP Address" />
+                        <StackPanel Grid.Row="1"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <TextBox x:Name="Camera2IpAddressTextBox"
+                                     Width="95"
+                                     Height="21"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="192.168.1.222"
+                                     TextAlignment="Left" />
+                            <ctrl:LightEmittingDiode x:Name="Camera2ConnectionStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+                <GroupBox x:Name="YouTubeApiConnectionGroup"
+                          Header="YouTube Channel Connection"
+                          Grid.Row="3"
+                          Grid.Column="0"
+                          Grid.ColumnSpan="3"
+                          Margin="0 4 0 0">
+                    <Grid x:Name="YouTubeConnectionGrid"
+                          Margin="0,5,5,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="0"
+                                    Orientation="Horizontal">
+                            <Label x:Name="YouTubeChannelConnectionDetailsLabel"
+                                   Grid.Row="0"
+                                   Grid.Column="0"
+                                   Content="Next Event:" />
+                            <TextBlock x:Name="YouTubeNextEventDetailsTextBlock"
+                                       VerticalAlignment="Center"
+                                       Margin="6 0 0 0"
+                                       Text="(YouTube live stream event connection to be established)"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="465" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <ctrl:LightEmittingDiode x:Name="YouTubeApiStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+
+                            <Button x:Name="RefreshYouTubeApiButton"
+                                    Width="26"
+                                    Height="26"
+                                    Margin="10 0 0 0"
+                                    HorizontalAlignment="Left"
+                                    Click="RefreshWebPresenterConnectionButton_Click"
+                                    ToolTip="Refresh WebPresenter Connection"
+                                    Visibility="Visible">
+                                <Image Source="/Resources/Refresh-Button-Icon.png"
+                                       Stretch="Fill" />
+                            </Button>
+                        </StackPanel>
+
+                    </Grid>
+                </GroupBox>
+                <GroupBox x:Name="ScheduleConnectionGroup"
+                          Header="Livestream Event Schedule Connection"
+                          Grid.Row="4"
+                          Grid.Column="0"
+                          Grid.ColumnSpan="3"
+                          Margin="0 4 0 0">
+                    <Grid x:Name="EventScheduleConnectionGrid"
+                          Margin="0,5,5,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="0"
+                                    Orientation="Horizontal">
+                            <Label x:Name="EventScheduleConnectionDetailsLabel"
+                                   Grid.Row="0"
+                                   Grid.Column="0"
+                                   Content="Next Scheduled Livestream:" />
+                            <TextBlock x:Name="StreamEventsScheduleDetailsTextBlock"
+                                       VerticalAlignment="Center"
+                                       Margin="6 0 0 0"
+                                       Text="(Event schedule connection to be established)"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="380" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <ctrl:LightEmittingDiode x:Name="EventScheduleApiStatusLed"
+                                                     Width="17"
+                                                     Height="17"
+                                                     Margin="6,0,0,0"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     BorderThickness="2"
+                                                     SelectedColour="White"
+                                                     IsOn="False" />
+
+                            <Button x:Name="RefreshEventScheduleApiButton"
+                                    Width="26"
+                                    Height="26"
+                                    Margin="10 0 0 0"
+                                    HorizontalAlignment="Left"
+                                    Click="RefreshEventScheduleApiButton_Click"
+                                    ToolTip="Refresh WebPresenter Connection"
+                                    Visibility="Visible">
+                                <Image Source="/Resources/Refresh-Button-Icon.png"
+                                       Stretch="Fill" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                </GroupBox>
+            </Grid>
+        </TabItem>
+        <TabItem x:Name="CountdownOptionsTab"
+                 Header="Countdown Options">
+            <Grid x:Name="CountdowOptionsContainerGrid"
+                  Margin="5 8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <GroupBox x:Name="TimelineOptionsGroup"
+                          Grid.Column="0"
                           Grid.Row="0"
                           Width="Auto"
                           Height="Auto"
-                          Margin="10,0,0,0"
-                          Header="Countdown Options">
+                          Header="Timeline Options">
                     <Grid x:Name="CountDownOptionsGrid"
+                          Margin="0,5,5,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Grid.Column="0"
+                               Grid.ColumnSpan="2"
+                               Content="Relative timings in HH:MM format." />
+                        <Label Content="Turn Green"
+                               Grid.Row="1"
+                               Grid.Column="0" />
+                        <TextBox x:Name="TurnGreenTextBox"
+                                 Grid.Row="1"
+                                 Grid.Column="1"
+                                 Width="40"
+                                 MaxHeight="21"
+                                 Margin="0,2,0,2"
+                                 HorizontalAlignment="Left"
+                                 Text="00:00"
+                                 TextAlignment="Left" />
+                        <Label Content="Start Streaming"
+                               Grid.Row="2"
+                               Grid.Column="0" />
+                        <TextBox x:Name="StartStreamTextBox"
+                                 Grid.Row="2"
+                                 Grid.Column="1"
+                                 Width="40"
+                                 MaxHeight="21"
+                                 Margin="0,2,0,2"
+                                 HorizontalAlignment="Left"
+                                 Text="00:00"
+                                 TextAlignment="Left" />
+                        <Label Content="Turn Yellow"
+                               Grid.Row="3"
+                               Grid.Column="0" />
+                        <TextBox x:Name="TurnYellowTextBox"
+                                 Grid.Row="3"
+                                 Grid.Column="1"
+                                 Width="40"
+                                 MaxHeight="21"
+                                 Margin="0,2,0,2"
+                                 HorizontalAlignment="Left"
+                                 Text="00:00"
+                                 TextAlignment="Left" />
+                        <Label Content="Start Recording"
+                               Grid.Column="0"
+                               Grid.Row="4" />
+                        <TextBox x:Name="StartRecordingTextBox"
+                                 Grid.Row="4"
+                                 Grid.Column="1"
+                                 Width="40"
+                                 MaxHeight="21"
+                                 Margin="0,2,0,2"
+                                 HorizontalAlignment="Left"
+                                 Text="00:00"
+                                 TextAlignment="Left" />
+                        <Label Content="Go Live"
+                               Grid.Column="0"
+                               Grid.Row="5" />
+                        <TextBox x:Name="GoLiveStartTime"
+                                 Grid.Column="1"
+                                 Grid.Row="5"
+                                 Width="40"
+                                 MaxHeight="21"
+                                 Margin="0,2,0,2"
+                                 HorizontalAlignment="Left"
+                                 Text="00:00"
+                                 TextAlignment="Left"
+                                 IsReadOnly="False"
+                                 IsEnabled="False" />
+                        <CheckBox x:Name="AutoShutdownCheckBox"
+                                  Content="Close App"
+                                  Grid.Column="0"
+                                  VerticalAlignment="Center"
+                                  Margin="4 0 0 0"
+                                  Grid.Row="6"
+                                  Checked="AutoShutdownCheckBox_Checked"
+                                  Unchecked="AutoShutdownCheckBox_Unchecked" />
+                        <StackPanel Orientation="Horizontal"
+                                    Grid.Row="6"
+                                    Grid.Column="1">
+                            <TextBox x:Name="AutoCloseTime"
+                                     Grid.Column="1"
+                                     Grid.Row="5"
+                                     Width="40"
+                                     MaxHeight="21"
+                                     Margin="0,2,0,2"
+                                     HorizontalAlignment="Left"
+                                     Text="00:30"
+                                     TextAlignment="Left"
+                                     IsReadOnly="False"
+                                     IsEnabled="False" />
+                            <Label Content="after Go Live" />
+                        </StackPanel>
+
+
+
+
+
+                    </Grid>
+                </GroupBox>
+                <GroupBox x:Name="ViewerOptionsGroup"
+                          Header="Countdown Viewer Options"
+                          Grid.Row="0"
+                          Grid.Column="2">
+                    <Grid x:Name="CountViewerOptionsGrid"
                           Margin="0,5,5,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="90" />
@@ -402,40 +1166,11 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <Label Content="Evening Start"
-                               Grid.Column="0"
-                               Grid.Row="0" />
-                        <StackPanel Grid.Row="0"
-                                    Grid.Column="1"
-                                    Orientation="Horizontal">
-                            <TextBox x:Name="EveningServiceStartTimeTextBox"
-                                     Width="40"
-                                     MaxHeight="21"
-                                     Margin="0,2,0,2"
-                                     HorizontalAlignment="Left"
-                                     Text="00:00"
-                                     TextAlignment="Left" />
-                            <Label Margin="5,0,0,0"
-                                   Content="HH:MM Use 24h clock" />
-                        </StackPanel>
-                        <Label Content="Morning Start"
-                               Grid.Column="0"
-                               Grid.Row="1" />
-                        <StackPanel Grid.Row="1"
-                                    Grid.Column="1"
-                                    Orientation="Horizontal">
-                            <TextBox x:Name="MorningServiceStartTimeTextBox"
-                                     Width="40"
-                                     MaxHeight="21"
-                                     Margin="0,2,0,2"
-                                     HorizontalAlignment="Left"
-                                     Text="00:00"
-                                     TextAlignment="Left" />
-                        </StackPanel>
+
                         <Label Content="Wallpaper"
                                Grid.Column="0"
-                               Grid.Row="2" />
-                        <Grid Grid.Row="2"
+                               Grid.Row="0" />
+                        <Grid Grid.Row="0"
                               Grid.Column="1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -458,9 +1193,9 @@
                                     Click="ChooseWallpaperButton_Click" />
                         </Grid>
                         <Label Content="Side Margin"
-                               Grid.Row="3"
+                               Grid.Row="1"
                                Grid.Column="0" />
-                        <StackPanel Grid.Row="3"
+                        <StackPanel Grid.Row="1"
                                     Grid.Column="1"
                                     Orientation="Horizontal">
                             <TextBox x:Name="XPositionTextBox"
@@ -474,9 +1209,9 @@
                                    Margin="5,0,0,0" />
                         </StackPanel>
                         <Label Content="Bottom Margin"
-                               Grid.Row="4"
+                               Grid.Row="2"
                                Grid.Column="0" />
-                        <StackPanel Grid.Row="4"
+                        <StackPanel Grid.Row="2"
                                     Grid.Column="1"
                                     Orientation="Horizontal">
                             <TextBox x:Name="YPositionTextBox"
@@ -489,33 +1224,10 @@
                             <Label Content="% of screen height from bottom"
                                    Margin="5,0,0,0" />
                         </StackPanel>
-                        <Label Content="Turn Green"
-                               Grid.Row="5"
-                               Grid.Column="0" />
-                        <StackPanel Grid.Row="5"
-                                    Grid.Column="1"
-                                    Orientation="Horizontal">
-                            <TextBox x:Name="TurnGreenTextBox"
-                                     Width="40"
-                                     MaxHeight="21"
-                                     Margin="0,2,0,2"
-                                     HorizontalAlignment="Left"
-                                     Text="00:00"
-                                     TextAlignment="Left" />
-                            <Label Content="Turn Yellow"
-                                   Margin="20,0,10,0" />
-                            <TextBox x:Name="TurnYellowTextBox"
-                                     Width="40"
-                                     MaxHeight="21"
-                                     Margin="0,2,0,2"
-                                     HorizontalAlignment="Left"
-                                     Text="00:00"
-                                     TextAlignment="Left" />
-                        </StackPanel>
                         <Label Content="Font Size"
-                               Grid.Row="6"
+                               Grid.Row="3"
                                Grid.Column="0" />
-                        <StackPanel Grid.Row="6"
+                        <StackPanel Grid.Row="3"
                                     Grid.Column="1"
                                     Orientation="Horizontal">
                             <TextBox x:Name="FontSizeTextBox"
@@ -526,30 +1238,470 @@
                                      Text="64"
                                      TextAlignment="Left" />
                         </StackPanel>
+                        <CheckBox x:Name="FullScreenViewerCheckBox"
+                                  Content="Full screen viewer"
+                                  IsChecked="False"
+                                  Grid.Row="4"
+                                  Grid.Column="0"
+                                  Grid.ColumnSpan="2"
+                                  Margin="6,5,0,5"
+                                  VerticalAlignment="Center"
+                                  Checked="FullScreenViewerCheckBox_Checked"
+                                  Unchecked="FullScreenViewerCheckBox_Unchecked" />
+                        <CheckBox x:Name="RestoreWindowLocationCheckbox"
+                                  Content="Restore viewer position"
+                                  IsChecked="False"
+                                  Grid.Row="5"
+                                  Grid.Column="0"
+                                  Grid.ColumnSpan="2"
+                                  Margin="6,5,0,5"
+                                  VerticalAlignment="Center"
+                                  Checked="RestoreWindowLocationCheckbox_Checked"
+                                  Unchecked="RestoreWindowLocationCheckbox_Unchecked" />
+                        <CheckBox x:Name="SuppressOnAirNotificationCheckbox"
+                                  Content="Suppress on air sign"
+                                  IsChecked="False"
+                                  Grid.Row="6"
+                                  Grid.Column="0"
+                                  Grid.ColumnSpan="2"
+                                  Margin="6,5,0,5"
+                                  VerticalAlignment="Center"
+                                  Checked="SuppressOnAirNotificationCheckbox_Checked"
+                                  Unchecked="SuppressOnAirNotificationCheckbox_Unchecked" />
+
+
                     </Grid>
                 </GroupBox>
-                <StackPanel x:Name="CommandButtonPanel"
-                            Orientation="Horizontal"
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top">
-                    <Button x:Name="RefreshAtemConnectionButton"
-                            Width="100"
-                            Height="30"
-                            Margin="3,10,10,0"
-                            Click="RefreshAtemConnectionButton_Click"
-                            Content="Refresh ATEM"
-                            Visibility="Visible" />
-                    <Button x:Name="ApplyOptionsButton"
-                            Width="100"
-                            Height="30"
-                            Margin="3,10,0,0"
-                            Click="ApplyOptionsButton_Click"
-                            Content="Apply Options"
-                            Visibility="Visible" />
-                </StackPanel>
-                
+                <TextBlock x:Name="AppVersionTextBlock"
+                           Grid.Row="3"
+                           Grid.Column="0"
+                           Grid.ColumnSpan="3"
+                           VerticalAlignment="Bottom"
+                           HorizontalAlignment="Left"
+                           Foreground="{StaticResource ResourceKey=LightForegroundBrush}"
+                           Text="Version Number" />
+                <Button x:Name="ApplyOptionsButton"
+                        Grid.Column="2"
+                        Grid.Row="2"
+                        HorizontalAlignment="Right"
+                        Width="100"
+                        Height="30"
+                        Margin="0 10 4 0"
+                        Click="ApplyOptionsButton_Click"
+                        Content="Apply Options"
+                        Visibility="Visible" />
+            </Grid>
+        </TabItem>
+        <TabItem x:Name="OtherOptionsTab"
+                 Header="Other Options">
+            <Grid x:Name="OtherOptionsContainerGrid"
+                  Margin="8 5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <GroupBox x:Name="StreamDescriptionGroup"
+                          Header="Stream Description Templates"
+                          Height="180"
+                          Grid.Row="0"
+                          Grid.Column="0">
+                    <Grid x:Name="StreamDescriptionTemplateGrid"
+                          Margin="8 0 5 5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="10" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Label Content="Shabbat"
+                               Grid.Row="0"
+                               Grid.Column="1" />
+                        <Label Content="Non-Shabbat (Festivals)"
+                               Grid.Row="0"
+                               Grid.Column="3" />
+                        <Label Content="Evening"
+                               Grid.Row="1"
+                               Grid.Column="0"
+                               VerticalAlignment="Center" />
+                        <Label Content="Morning"
+                               Grid.Row="3"
+                               Grid.Column="0"
+                               VerticalAlignment="Center" />
+                        <TextBox x:Name="StreamDescriptionShabbatEveningTextBox"
+                                 Grid.Row="1"
+                                 Grid.Column="1"
+                                 Text="Join us as we ..." />
+                        <TextBox x:Name="StreamDescriptionFestivalEveningTextBox"
+                                 Grid.Row="1"
+                                 Grid.Column="3"
+                                 Text="Join us as we ..." />
+                        <TextBox x:Name="StreamDescriptionShabbatMorningTextBox"
+                                 Grid.Row="3"
+                                 Grid.Column="1"
+                                 Text="Join us as we ..." />
+                        <TextBox x:Name="StreamDescriptionFestivalMorningTextBox"
+                                 Grid.Row="3"
+                                 Grid.Column="3"
+                                 Text="Join us as we ..." />
+
+                    </Grid>
+                </GroupBox>
+                <Grid x:Name="RecordingFileNameTemplateGrid"
+                      Grid.Row="1"
+                      Grid.Column="0"
+                      Margin="0 5 0 5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Label Content="Local Recording File Name Template:"
+                           Grid.Row="0"
+                           Grid.Column="0" />
+                    <TextBox x:Name="RecordingFileNameTextBox"
+                             Grid.Row="0"
+                             Grid.Column="1"
+                             MaxHeight="21"
+                             Margin="0,2,0,2"
+                             TextChanged="RecordingFileNameTextBox_TextChanged" />
+                </Grid>
+                <Grid x:Name="PtzSetupLayoutGrid"
+                      Grid.Row="2"
+                      Grid.Column="0"
+                      Margin="0 5 0 0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <GroupBox x:Name="PtzSetup1Group"
+                              Header="PTZ Setup 1"
+                              Grid.Column="0"
+                              Grid.Row="0">
+                        <Grid x:Name="PtzSetup1Grid"
+                              Margin="4 6 4 4">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="PtzSetup1NameTextBox"
+                                     Grid.Row="0"
+                                     Grid.Column="0"
+                                     Grid.ColumnSpan="2"
+                                     Height="21"
+                                     Text="Evening Regular"
+                                     TextChanged="PtzSetup1NameTextBox_TextChanged" />
+                            <RadioButton x:Name="PtzSetup1Cam1"
+                                         GroupName="PtzSetup1"
+                                         Content="Camera 1"
+                                         Grid.Column="0"
+                                         Grid.Row="1"
+                                         Margin="0 8 0 0" />
+                            <TextBox x:Name="PtzSetup1Cam1Preset"
+                                     Grid.Row="1"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Left"
+                                     TextAlignment="Center"
+                                     Text="0"
+                                     Height="21"
+                                     Width="24"
+                                     Margin="8 6 6 0" />
+                            <RadioButton x:Name="PtzSetup1Cam2"
+                                         GroupName="PtzSetup1"
+                                         Content="Camera 2"
+                                         Grid.Column="0"
+                                         Grid.Row="2"
+                                         Margin="0 8 0 0" />
+                            <TextBox x:Name="PtzSetup1Cam2Preset"
+                                     Grid.Row="2"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Left"
+                                     TextAlignment="Center"
+                                     Text="0"
+                                     Height="21"
+                                     Width="24"
+                                     Margin="8 6 6 0" />
+                            <StackPanel Orientation="Horizontal"
+                                        Grid.Row="3"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="2">
+                                <TextBlock Text="Default"
+                                           Margin="2 6 0 0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource SubduedForegroundBrush}" />
+                                <RadioButton x:Name="PtzSetup1PmDefault"
+                                             GroupName="PtzPmPref"
+                                             Checked="PtzSetupPmDefault_Checked"
+                                             Content="PM"
+                                             Margin="8 8 0 0" />
+                                <RadioButton x:Name="PtzSetup1AmDefault"
+                                             GroupName="PtzAmPref"
+                                             Checked="PtzSetupAmDefault_Checked"
+                                             Content="AM"
+                                             Margin="8 8 0 0" />
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                    <GroupBox x:Name="PtzSetup2Group"
+                              Header="PTZ Setup 2"
+                              Grid.Column="2"
+                              Grid.Row="0">
+                        <Grid x:Name="PtzSetup2Grid"
+                              Margin="4 6 4 4">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="PtzSetup2NameTextBox"
+                                     Grid.Row="0"
+                                     Grid.Column="0"
+                                     Grid.ColumnSpan="2"
+                                     Height="21"
+                                     Text="Evening Regular"
+                                     TextChanged="PtzSetup2NameTextBox_TextChanged" />
+                            <RadioButton x:Name="PtzSetup2Cam1"
+                                         GroupName="PtzSetup2"
+                                         Content="Camera 1"
+                                         Grid.Column="0"
+                                         Grid.Row="1"
+                                         Margin="0 8 0 0" />
+                            <TextBox x:Name="PtzSetup2Cam1Preset"
+                                     Grid.Row="1"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Left"
+                                     TextAlignment="Center"
+                                     Text="0"
+                                     Height="21"
+                                     Width="24"
+                                     Margin="8 6 6 0" />
+                            <RadioButton x:Name="PtzSetup2Cam2"
+                                         GroupName="PtzSetup2"
+                                         Content="Camera 2"
+                                         Grid.Column="0"
+                                         Grid.Row="2"
+                                         Margin="0 8 0 0" />
+                            <TextBox x:Name="PtzSetup2Cam2Preset"
+                                     Grid.Row="2"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Left"
+                                     TextAlignment="Center"
+                                     Text="0"
+                                     Height="21"
+                                     Width="24"
+                                     Margin="8 6 6 0" />
+                            <StackPanel Orientation="Horizontal"
+                                        Grid.Row="3"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="2">
+                                <TextBlock Text="Default"
+                                           Margin="2 6 0 0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource SubduedForegroundBrush}" />
+                                <RadioButton x:Name="PtzSetup2PmDefault"
+                                             Checked="PtzSetupPmDefault_Checked"
+                                             GroupName="PtzPmPref"
+                                             Content="PM"
+                                             Margin="8 8 0 0" />
+                                <RadioButton x:Name="PtzSetup2AmDefault"
+                                             GroupName="PtzAmPref"
+                                             Checked="PtzSetupAmDefault_Checked"
+                                             Content="AM"
+                                             Margin="8 8 0 0" />
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                    <GroupBox x:Name="PtzSetup3Group"
+                              Header="PTZ Setup 3"
+                              Grid.Column="4"
+                              Grid.Row="0">
+                        <Grid x:Name="PtzSetup3Grid"
+                              Margin="4 6 4 4">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="PtzSetup3NameTextBox"
+                                     Grid.Row="0"
+                                     Grid.Column="0"
+                                     Grid.ColumnSpan="2"
+                                     Height="21"
+                                     Text="Evening Regular"
+                                     TextChanged="PtzSetup3NameTextBox_TextChanged" />
+                            <RadioButton x:Name="PtzSetup3Cam1"
+                                         GroupName="PtzSetup3"
+                                         Content="Camera 1"
+                                         Grid.Column="0"
+                                         Grid.Row="1"
+                                         Margin="0 8 0 0" />
+                            <TextBox x:Name="PtzSetup3Cam1Preset"
+                                     Grid.Row="1"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Left"
+                                     TextAlignment="Center"
+                                     Text="0"
+                                     Height="21"
+                                     Width="24"
+                                     Margin="8 6 6 0" />
+                            <RadioButton x:Name="PtzSetup3Cam2"
+                                         GroupName="PtzSetup3"
+                                         Content="Camera 2"
+                                         Grid.Column="0"
+                                         Grid.Row="2"
+                                         Margin="0 8 0 0" />
+                            <TextBox x:Name="PtzSetup3Cam2Preset"
+                                     Grid.Row="2"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Left"
+                                     TextAlignment="Center"
+                                     Text="0"
+                                     Height="21"
+                                     Width="24"
+                                     Margin="8 6 6 0" />
+                            <StackPanel Orientation="Horizontal"
+                                        Grid.Row="3"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="2">
+                                <TextBlock Text="Default"
+                                           Margin="2 6 0 0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource SubduedForegroundBrush}" />
+                                <RadioButton x:Name="PtzSetup3PmDefault"
+                                             Checked="PtzSetupPmDefault_Checked"
+                                             GroupName="PtzPmPref"
+                                             Content="PM"
+                                             Margin="8 8 0 0" />
+                                <RadioButton x:Name="PtzSetup3AmDefault"
+                                             GroupName="PtzAmPref"
+                                             Checked="PtzSetupAmDefault_Checked"
+                                             Content="AM"
+                                             Margin="8 8 0 0" />
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                    <GroupBox x:Name="PtzSetup4Group"
+                              Header="PTZ Setup 4"
+                              Grid.Column="6"
+                              Grid.Row="0">
+                        <Grid x:Name="PtzSetup4Grid"
+                              Margin="4 6 4 4">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="PtzSetup4NameTextBox"
+                                     Grid.Row="0"
+                                     Grid.Column="0"
+                                     Grid.ColumnSpan="2"
+                                     Height="21"
+                                     Text="Evening Regular"
+                                     TextChanged="PtzSetup4NameTextBox_TextChanged" />
+                            <RadioButton x:Name="PtzSetup4Cam1"
+                                         GroupName="PtzSetup4"
+                                         Content="Camera 1"
+                                         Grid.Column="0"
+                                         Grid.Row="1"
+                                         Margin="0 8 0 0" />
+                            <TextBox x:Name="PtzSetup4Cam1Preset"
+                                     Grid.Row="1"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Left"
+                                     TextAlignment="Center"
+                                     Text="0"
+                                     Height="21"
+                                     Width="24"
+                                     Margin="8 6 6 0" />
+                            <RadioButton x:Name="PtzSetup4Cam2"
+                                         GroupName="PtzSetup4"
+                                         Content="Camera 2"
+                                         Grid.Column="0"
+                                         Grid.Row="2"
+                                         Margin="0 8 0 0" />
+                            <TextBox x:Name="PtzSetup4Cam2Preset"
+                                     Grid.Row="2"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Left"
+                                     TextAlignment="Center"
+                                     Text="0"
+                                     Height="21"
+                                     Width="24"
+                                     Margin="8 6 6 0" />
+                            <StackPanel Orientation="Horizontal"
+                                        Grid.Row="3"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="2">
+                                <TextBlock Text="Default"
+                                           Margin="2 6 0 0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource SubduedForegroundBrush}" />
+                                <RadioButton x:Name="PtzSetup4PmDefault"
+                                             Checked="PtzSetupPmDefault_Checked"
+                                             GroupName="PtzPmPref"
+                                             Content="PM"
+                                             Margin="8 8 0 0" />
+                                <RadioButton x:Name="PtzSetup4AmDefault"
+                                             GroupName="PtzAmPref"
+                                             Checked="PtzSetupAmDefault_Checked"
+                                             Content="AM"
+                                             Margin="8 8 0 0" />
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+                <Button x:Name="ApplyOtherOptionsButton"
+                        Grid.Column="0"
+                        Grid.Row="3"
+                        HorizontalAlignment="Right"
+                        Width="100"
+                        Height="30"
+                        Margin="0 10 4 0"
+                        Click="ApplyOptionsButton_Click"
+                        Content="Apply Options"
+                        Visibility="Visible" />
             </Grid>
         </TabItem>
     </TabControl>

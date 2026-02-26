@@ -1,549 +1,441 @@
-﻿using BMDSwitcherAPI;
-using Mooseware.TimeToAir.Controls;
-using Mooseware.TimeToAir.Themes.Styles;
-using SwitcherPanelCSharp;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Globalization;
-using System.Linq;
-using System.Runtime.InteropServices;
+using System.Net.Http;
+using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
+using HtmlAgilityPack;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Mooseware.Tachnit.BmdHyperdeckController;
+using Mooseware.Tachnit.PtzOpticsCameraController;
+using Mooseware.Tachnit.WebPresenterApi;
+using Mooseware.TimeToAir.Configuration;
+using Mooseware.TimeToAir.Controls;
+using Mooseware.TimeToAir.Themes.Styles;
 
-namespace Mooseware.TimeToAir
+namespace Mooseware.TimeToAir;
+
+// TODO: Plan for a v2.0 release with all of these features and tasks...
+// TODO: Implement remaining feature flags:
+//       - UseYouTubeConnection
+// TODO: Test the snot out of the auto-start actions that will largely replace the 2nd StreamDeck screen
+// TODO: Implement the remaining v2.0 automationfeatures
+//       - Check the YouTube API and get the event set up if it isn't already
+//         +-> YT app key can go in the app settings.
+// TODO: Convert BMD API local loggers to full app logger (maybe keep local if DI comes up empty)
+// TODO: Add logging into places that don't have it yet.
+
+/// <summary>
+/// Interaction logic for MainWindow.xaml
+/// </summary>
+public partial class MainWindow : Window
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Timer for keeping track of the current time and updating the countdown display
     /// </summary>
-    public partial class MainWindow : Window
+    private readonly DispatcherTimer _heartbeat;
+
+    /// <summary>
+    /// Reference to the ATEM video switcher API
+    /// </summary>
+    private Switcher _atem = null;
+
+    /// <summary>
+    /// Reference to the HyperDeck recorder API
+    /// </summary>
+    private HyperdeckController _hyperDeck = null;
+
+    /// <summary>
+    /// Reference to the WebPresenter recorder
+    /// </summary>
+    private WebPresenterController _webPresenter = null;
+
+    /// <summary>
+    /// Date and time of the start of the next service. This is the point in time we are counting down to.
+    /// </summary>
+    private DateTime _onAirTime = DateTime.MinValue;
+
+    /// <summary>
+    /// The (calculated) time at which streaming should be started automatically (in auto mode)
+    /// </summary>
+    private DateTime _streamStartTime = DateTime.MaxValue;
+
+    /// <summary>
+    /// The (calculated) time at which recording should be started automatically (in auto mode)
+    /// </summary>
+    private DateTime _startRecordingTime = DateTime.MaxValue;
+
+    /// <summary>
+    /// The (calculated) time at which the secondary camera should be previewed automatically (in auto mode)
+    /// </summary>
+    private DateTime _secondaryCameraPreviewTime = DateTime.MaxValue;
+
+    /// <summary>
+    /// The (calculated time at which the app is automatically shut down (after going live)
+    /// </summary>
+    private DateTime _autoShutDownTime = DateTime.MaxValue;
+
+    /// <summary>
+    /// The number of the camera which should be previewed shortly after going live
+    /// </summary>
+    private int _secondaryCamera = 0;
+
+    /// <summary>
+    /// Sentinel to note that streaming has been started automatically (so stop trying)
+    /// </summary>
+    private bool _startedStreaming = false;
+
+    /// <summary>
+    /// Sentinel to note that recording has been started automatically (so stop trying)
+    /// </summary>
+    private bool _startedRecording = false;
+
+    /// <summary>
+    /// Sentinel to note that the stream has gone on-air automatically (so stop trying)
+    /// </summary>
+    private bool _goneOnAir = false;
+
+    /// <summary>
+    /// Sentinel to note that the secondary camera has been sent to Preview (so stop trying)
+    /// </summary>
+    private bool _previewedSecondaryCamera = false;
+
+    /// <summary>
+    /// The title of the next livestream event
+    /// </summary>
+    private string _nextEventTitle = "Next Livestream";
+
+    /// <summary>
+    /// The subtitle (if any) of the next livestream event
+    /// </summary>
+    private string _nextEventSubtitle = "(TBD)";
+
+    /// <summary>
+    /// The scheduled time after which a full suite of connection tests should be performed.
+    /// When tests are not pending DateTime.MaxValue is used.
+    /// </summary>
+    private DateTime _pendingTestStart = DateTime.MaxValue;
+
+    /// <summary>
+    /// The last clock time that a full suite of connection tests was completed.
+    /// When tests have never been done DateTime.MinValue is used.
+    /// </summary>
+    private DateTime _lastTestFinish = DateTime.MinValue;
+
+    /// <summary>
+    /// Sentinel to prevent reentrancy while testing.
+    /// </summary>
+    private bool _activelyTesting = false;
+
+    /// <summary>
+    /// True when the last completed test resulted in a caution status.
+    /// False when Ready, Testing or TBD (e.g. otherwise)
+    /// </summary>
+    private bool _inCautionStatus = false;
+
+    /// <summary>
+    /// Sentinel to prevent null references to controls while loading the form.
+    /// </summary>
+    private bool _loaded = false;   // Sentinel to prevent null refs while loading the window.
+
+    /// <summary>
+    /// Sentinel to track whether PTZ camera presets have been applied
+    /// (After startup and first test, but not after _every_ test(!)
+    /// </summary>
+    private bool _ptzSetupApplied = false;
+
+    /// <summary>
+    /// Window where the countdown time and on air notice are shown
+    /// </summary>
+    private readonly CountdownViewer _countdownViewer = new();
+
+    /// <summary>
+    /// Flag for whether or not the ATEM connection test has succeeded
+    /// </summary>
+    private bool IsAtemConnected { get; set; } = false;
+
+    /// <summary>
+    /// Flag for whether or not the HyperDeck connection test has succeeded
+    /// </summary>
+    private bool IsHyperDeckConnected { get; set; } = false;
+
+    /// <summary>
+    /// Last known remaining HyperDeck recording capacity in minutes
+    /// </summary>
+    private int RecordingMinutesRemaining { get; set; } = 0;
+
+    /// <summary>
+    /// Flag for whether or not the WebPresenter streaming bridge is connected
+    /// </summary>
+    private bool IsWebPresenterConnected { get; set; } = false;
+
+    /// <summary>
+    /// Flag for whether or not the Camera 1 PTZ camera is connected
+    /// </summary>
+    private bool IsCam1Connected { get; set; } = false;
+
+    /// <summary>
+    /// Flag for whether or not the Camera 2 PTZ camera is connected
+    /// </summary>
+    private bool IsCam2Connected { get; set; } = false;
+
+    /// <summary>
+    /// Flag tracking whether or not the Schedule API connection has succeeded 
+    /// </summary>
+    private bool IsScheduleConnected { get; set; } = false;
+
+    /// <summary>
+    /// Action to take when the Run button is pressed or the countdown time elapses
+    /// </summary>
+    private enum RunAction 
+    { 
+        /// <summary>
+        /// Stop if running, run if stopped
+        /// </summary>
+        Toggle, 
+        /// <summary>
+        /// Run if not already running (otherwise no effect)
+        /// </summary>
+        ForceRun, 
+        /// <summary>
+        /// Stop if running (otherwise no effect)
+        /// </summary>
+        ForceStop 
+    };
+
+    /// <summary>
+    /// Application settings loaded from the appsettings.json file at application startup
+    /// </summary>
+    private readonly AppSettings _appSettings;
+
+    /// <summary>
+    /// Logging instance established at the application start
+    /// </summary>
+    private readonly ILogger<MainWindow> _logger;
+
+    /// <summary>
+    /// Http Client Factory from DI for use by components that need one (e.g. WebPresenterController)
+    /// </summary>
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    public MainWindow(IOptions<Configuration.AppSettings> appSettings, ILogger<MainWindow> logger, IHttpClientFactory httpClientFactory)
     {
-        /// <summary>
-        /// Timer for keeping track of the current time and updating the countdown display
-        /// </summary>
-        private readonly DispatcherTimer _heartbeat;
+        InitializeComponent();
 
-        /// <summary>
-        /// ATEM switcher discovery API
-        /// </summary>
-        private readonly IBMDSwitcherDiscovery _switcherDiscovery;
+        // Get a DI reference to the appsettings.json configuration data
+        _appSettings = appSettings.Value;
 
-        /// <summary>
-        /// ATEM Switcher API
-        /// </summary>
-        private IBMDSwitcher _atem;
+        // Get a DI reference to the IHttpClientFactory
+        _httpClientFactory = httpClientFactory;
 
-        /// <summary>
-        /// ATEM API for the first MixEffectBlock
-        /// </summary>
-        private IBMDSwitcherMixEffectBlock _me0;
+        // Get a DI reference to the (Serilog) Logger
+        _logger = logger;
+        _logger.LogInformation("MainWindow initializing");
 
-        /// <summary>
-        /// Utility class for hooking callbacks from the MixEffectBlock
-        /// </summary>
-        private readonly MixEffectBlockMonitor _mixEffectBlockMonitor;
-
-        /// <summary>
-        /// Reference to the 1st ME block's Auxiliary Output used to set the output source
-        /// </summary>
-        private IBMDSwitcherInputAux _auxOut;
-
-        /// <summary>
-        /// Input ID of the configured clip input (where the countdown viewer is displayed)
-        /// </summary>
-        private long _clipInputId;
-
-        /// <summary>
-        /// Input ID of the first Media Player (if MP1 is in program, we are NOT on air)
-        /// </summary>
-        private long _inputMp1Id;
-
-        /// <summary>
-        /// Input ID of the second Media Player (if MP2 is in program, we are NOT on air)
-        /// </summary>
-        private long _inputMp2Id;
-
-        /// <summary>
-        /// Input ID of the PROGRAM OUT input. Used to set the Aux Out to Program (normal operation)
-        /// </summary>
-        private long _pgmOutId;
-
-        /// <summary>
-        /// Input ID of the PREVIEW OUT input. Used to confirm that this input is active in the ATEM
-        /// </summary>
-        private long _pvwOutId;
-
-        /// <summary>
-        /// Date and time of the start of the next service. This is the point in time we are counting down to.
-        /// </summary>
-        private DateTime _OnAirTime = DateTime.MinValue;
-
-        /// <summary>
-        /// Sentinel to prevent null references to controls while loading the form.
-        /// </summary>
-        private bool _loaded = false;   // Sentinel to prevent null refs while loading the window.
-
-        /// <summary>
-        /// Window where the countdown time and on air notice are shown
-        /// </summary>
-        private readonly CountdownViewer _countdownViewer = new();
-
-        /// <summary>
-        /// Flag to not whether the ATEM connection test has succeeded
-        /// </summary>
-        private bool IsAtemConnected { get; set; }
-
-        /// <summary>
-        /// Action to take when the Run button is pressed or the countdown time elapses
-        /// </summary>
-        private enum RunAction 
-        { 
-            /// <summary>
-            /// Stop if running, run if stopped
-            /// </summary>
-            Toggle, 
-            /// <summary>
-            /// Run if not already running (otherwise no effect)
-            /// </summary>
-            ForceRun, 
-            /// <summary>
-            /// Stop if running (otherwise no effect)
-            /// </summary>
-            ForceStop 
+        _heartbeat = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(50)
         };
+        _heartbeat.Tick += Heartbeat_Tick;
 
-        public MainWindow()
+        Config.User.Reload();
+
+        _countdownViewer.Show();
+    }
+
+    private void ApplyOptionsButton_Click(object sender, RoutedEventArgs e)
+    {
+        bool atemReconnectRequired = false; // or any other API object needs to be re-initialized.
+        bool anyOtherSettingChanged = false;
+        string formattedTimeSpan;
+
+        if (AtemIpAddressTextBox.Text.Trim() != Config.User.AtemIpAddress)
         {
-            InitializeComponent();
-
-            _heartbeat = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(50)
-            };
-            _heartbeat.Tick += Heartbeat_Tick;
-
-            // Wire up ATEM switch event of interest.
-            // note: this invoke pattern ensures our callback is called in the main thread. We are making double
-            // use of lambda expressions here to achieve this.
-            // Essentially, the events will arrive at the callback class (implemented by our monitor classes)
-            // on a separate thread. We must marshal these to the main thread, and we're doing this by calling
-            // invoke on the Windows Forms object. The lambda expression is just a simplification.
-            _mixEffectBlockMonitor = new MixEffectBlockMonitor();
-            _mixEffectBlockMonitor.ProgramInputChanged += new SwitcherEventHandler((s, a) => this.Dispatcher.Invoke((Action)(() => AtemProgramInputChanged())));
-
-            _switcherDiscovery = new CBMDSwitcherDiscovery();
-
-            IsAtemConnected = false;
-
-            _countdownViewer.Show();
+            Config.User.AtemIpAddress = AtemIpAddressTextBox.Text.Trim();
+            atemReconnectRequired = true;
         }
-
-        /// <summary>
-        /// Event fired if a change to the ATEM's program input source is detected. This determines whether the ON AIR display is needed.
-        /// </summary>
-        private void AtemProgramInputChanged()
+        if (CountdownInputTextBox.Text.Trim() != Config.User.InputCountdownName)
         {
-            SetOnAirDisplay();
+            Config.User.InputCountdownName = CountdownInputTextBox.Text.Trim();
+            atemReconnectRequired = true;
         }
-
-        /// <summary>
-        /// Load the settings from local storage and apply defaults, if necessary.
-        /// </summary>
-        private static void LoadSettings()
+        if (TitleCardInputTextBox.Text.Trim() != Config.User.InputTitleCardName)
         {
-            bool dirty = false;
-
-            LocalConfiguration.Load();
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.AtemIpAddress))
-            {
-                LocalConfiguration.Settings.AtemIpAddress = Properties.Settings.Default.AtemIpAddress;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.InputCountdown))
-            {
-                LocalConfiguration.Settings.InputCountdown = Properties.Settings.Default.InputCountdownName;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.InputMP1))
-            {
-                LocalConfiguration.Settings.InputMP1 = Properties.Settings.Default.InputMP1Name;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.InputMP2))
-            {
-                LocalConfiguration.Settings.InputMP2 = Properties.Settings.Default.InputMP2Name;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.EveningStart))
-            {
-                LocalConfiguration.Settings.EveningStart = Properties.Settings.Default.EveningStart;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.MorningStart))
-            {
-                LocalConfiguration.Settings.MorningStart = Properties.Settings.Default.MorningStart;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.LastCustomStart))
-            {
-                LocalConfiguration.Settings.LastCustomStart = Properties.Settings.Default.LastCustomStart;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.WallpaperFilespec))
-            {
-                LocalConfiguration.Settings.WallpaperFilespec = Properties.Settings.Default.WallpaperFilespec;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.TurnGreen))
-            {
-                LocalConfiguration.Settings.TurnGreen = Properties.Settings.Default.TurnGreen;
-                dirty = true;
-            }
-            if (string.IsNullOrEmpty(LocalConfiguration.Settings.TurnYellow))
-            {
-                LocalConfiguration.Settings.TurnYellow = Properties.Settings.Default.TurnYellow;
-                dirty = true;
-            }
-            if (LocalConfiguration.Settings.XPosition == 0)
-            {
-                LocalConfiguration.Settings.XPosition = Properties.Settings.Default.XPosition;
-                dirty = true;
-            }
-            if (LocalConfiguration.Settings.YPosition == 0)
-            {
-                LocalConfiguration.Settings.YPosition = Properties.Settings.Default.YPosition;
-                dirty = true;
-            }
-            if (LocalConfiguration.Settings.FontSize == 0)
-            {
-                LocalConfiguration.Settings.FontSize = Properties.Settings.Default.FontSize;
-                dirty = true;
-            }
-            if (LocalConfiguration.Settings.WindowLocation.X == 0
-                && LocalConfiguration.Settings.WindowLocation.Y == 0)
-            {
-                LocalConfiguration.Settings.WindowLocation = new System.Drawing.Point(
-                    Properties.Settings.Default.WindowLocation.X,
-                    Properties.Settings.Default.WindowLocation.Y);
-                dirty = true;
-            }
-            if (LocalConfiguration.Settings.WindowSize.Width == 0
-                && LocalConfiguration.Settings.WindowSize.Height == 0)
-            {
-                LocalConfiguration.Settings.WindowSize = new System.Drawing.Size(
-                    Properties.Settings.Default.WindowSize.Width,
-                    Properties.Settings.Default.WindowSize.Height);
-                dirty = true;
-            }
-            // No need to initialize RestoreWindowLocation or FullScreenViewer or SuppressOnAirNotificationCheckbox
-            if (dirty)
-            {
-                LocalConfiguration.Save();
-            }
+            Config.User.InputTitleCardName = TitleCardInputTextBox.Text.Trim();
+            atemReconnectRequired = true;
         }
-
-        private void ApplyOptionsButton_Click(object sender, RoutedEventArgs e)
+        if (WallpaperFilespecTextBox.Text.Trim() != Config.User.WallpaperFilespec)
         {
-            bool atemReconnectRequired = false; // or any other API object needs to be re-initialized.
-            bool anyOtherSettingChanged = false;
-            string formattedTimeOfDay;
-            string formattedTimeSpan;
-
-            if (AtemIpAddressTextBox.Text.Trim() != LocalConfiguration.Settings.AtemIpAddress)
+            Config.User.WallpaperFilespec = WallpaperFilespecTextBox.Text.Trim();
+            atemReconnectRequired = true;
+        }
+        if (int.TryParse(XPositionTextBox.Text.Trim(), out int newXPosition))
+        {
+            if (XPositionTextBox.Text.Trim() != Config.User.XPosition.ToString())
             {
-                LocalConfiguration.Settings.AtemIpAddress = AtemIpAddressTextBox.Text.Trim();
+                Config.User.XPosition = newXPosition;
                 atemReconnectRequired = true;
             }
-            if (CountdownInputTextBox.Text.Trim() != LocalConfiguration.Settings.InputCountdown)
+        }
+        if (int.TryParse(YPositionTextBox.Text.Trim(), out int newYPosition))
+        {
+            if (YPositionTextBox.Text.Trim() != Config.User.YPosition.ToString())
             {
-                LocalConfiguration.Settings.InputCountdown = CountdownInputTextBox.Text.Trim();
+                Config.User.YPosition = newYPosition;
                 atemReconnectRequired = true;
             }
-            if (MP1InputTextBox.Text.Trim() != LocalConfiguration.Settings.InputMP1)
+        }
+        if (TurnGreenTextBox.Text.Trim() != Config.User.TurnGreen)
+        {
+            // Is the new value valid?
+            if (IsValidMinutesAndSeconds(TurnGreenTextBox.Text, out formattedTimeSpan))
             {
-                LocalConfiguration.Settings.InputMP1 = MP1InputTextBox.Text.Trim();
-                atemReconnectRequired = true;
+                Config.User.TurnGreen = formattedTimeSpan;
+                anyOtherSettingChanged = true;
             }
-            if (MP2InputTextBox.Text.Trim() != LocalConfiguration.Settings.InputMP2)
+        }
+        if (TurnYellowTextBox.Text.Trim() != Config.User.TurnYellow)
+        {
+            // Is the new value valid?
+            if (IsValidMinutesAndSeconds(TurnYellowTextBox.Text, out formattedTimeSpan))
             {
-                LocalConfiguration.Settings.InputMP2 = MP2InputTextBox.Text.Trim();
-                atemReconnectRequired = true;
+                Config.User.TurnYellow = formattedTimeSpan;
+                anyOtherSettingChanged = true;
             }
-            if (EveningServiceStartTimeTextBox.Text.Trim() != LocalConfiguration.Settings.EveningStart)
+        }
+        if (int.TryParse(FontSizeTextBox.Text.Trim(), out int newFontSize))
+        {
+            if (FontSizeTextBox.Text.Trim() != Config.User.FontSize.ToString())
             {
-                // Is the new value valid?
-                if (IsValidTimeOfDayString(EveningServiceStartTimeTextBox.Text, out formattedTimeOfDay))
-                {
-                    LocalConfiguration.Settings.EveningStart = formattedTimeOfDay;
-                    anyOtherSettingChanged = true;
-                }
-            }
-            if (MorningServiceStartTimeTextBox.Text.Trim() != LocalConfiguration.Settings.MorningStart)
-            {
-                // Is the new value valid?
-                if (IsValidTimeOfDayString(MorningServiceStartTimeTextBox.Text, out formattedTimeOfDay))
-                {
-                    LocalConfiguration.Settings.MorningStart = formattedTimeOfDay;
-                    anyOtherSettingChanged = true;
-                }
-            }
-            if (CustomStartTimeTextBox.Text.Trim() != LocalConfiguration.Settings.LastCustomStart)
-            {
-                // Is the new value valid?
-                if (IsValidTimeOfDayString(CustomStartTimeTextBox.Text, out formattedTimeOfDay))
-                {
-                    LocalConfiguration.Settings.LastCustomStart = formattedTimeOfDay;
-                    anyOtherSettingChanged = true;
-                }
-            }
-            if (WallpaperFilespecTextBox.Text.Trim() != LocalConfiguration.Settings.WallpaperFilespec)
-            {
-                LocalConfiguration.Settings.WallpaperFilespec = WallpaperFilespecTextBox.Text.Trim();
-                atemReconnectRequired = true;
-            }
-            if (int.TryParse(XPositionTextBox.Text.Trim(), out int newXPosition))
-            {
-                if (XPositionTextBox.Text.Trim() != LocalConfiguration.Settings.XPosition.ToString())
-                {
-                    LocalConfiguration.Settings.XPosition = newXPosition;
-                    atemReconnectRequired = true;
-                }
-            }
-            if (int.TryParse(YPositionTextBox.Text.Trim(), out int newYPosition))
-            {
-                if (YPositionTextBox.Text.Trim() != LocalConfiguration.Settings.YPosition.ToString())
-                {
-                    LocalConfiguration.Settings.YPosition = newYPosition;
-                    atemReconnectRequired = true;
-                }
-            }
-            if (TurnGreenTextBox.Text.Trim() != LocalConfiguration.Settings.TurnGreen)
-            {
-                // Is the new value valid?
-                if (IsValidMinutesAndSeconds(TurnGreenTextBox.Text, out formattedTimeSpan))
-                {
-                    LocalConfiguration.Settings.TurnGreen = formattedTimeSpan;
-                    anyOtherSettingChanged = true;
-                }
-            }
-            if (TurnYellowTextBox.Text.Trim() != LocalConfiguration.Settings.TurnYellow)
-            {
-                // Is the new value valid?
-                if (IsValidMinutesAndSeconds(TurnYellowTextBox.Text, out formattedTimeSpan))
-                {
-                    LocalConfiguration.Settings.TurnYellow = formattedTimeSpan;
-                    anyOtherSettingChanged = true;
-                }
-            }
-            if (int.TryParse(FontSizeTextBox.Text.Trim(), out int newFontSize))
-            {
-                if (FontSizeTextBox.Text.Trim() != LocalConfiguration.Settings.FontSize.ToString())
-                {
-                    LocalConfiguration.Settings.FontSize = newFontSize;
-                    anyOtherSettingChanged = true;
-                }
-            }
-
-            if (atemReconnectRequired || anyOtherSettingChanged)
-            {
-                // Save settings changes...
-                LocalConfiguration.Save();
-
-                // Reconnect to ATEM API if required...
-                if (atemReconnectRequired)
-                {
-                    ConnectToAtem();
-                }
-
-                // Refresh the display to pick up any formatting changes.
-                ShowOptions();
+                Config.User.FontSize = newFontSize;
+                anyOtherSettingChanged = true;
             }
         }
 
-        /// <summary>
-        /// Tests a time of day string in HH:MM 24 hour format to see if it is a valid time of day
-        /// </summary>
-        /// <param name="raw">Input time of day string</param>
-        /// <param name="formattedString">Valid time of day string in HH:MM 24 hour format, if available</param>
-        /// <returns>True if the input string is a valid time of day</returns>
-        private static bool IsValidTimeOfDayString(string raw, out string formattedString)
+        if (atemReconnectRequired || anyOtherSettingChanged)
         {
-            CultureInfo enCA = new("en-CA");
-            formattedString = raw;
+            // Save settings changes...
+            Config.User.Save();
+            ////LocalConfiguration.Save();
 
-            bool result = DateTime.TryParseExact(raw, "H:mm", enCA, DateTimeStyles.None, out DateTime timeOfDay);
-            if (result)
+            // Reconnect to ATEM API if required...
+            if (atemReconnectRequired)
             {
-                formattedString = timeOfDay.ToString("HH:mm");
+                ConnectToAtem();
             }
-            return result;
+
+            // Refresh the display to pick up any formatting changes.
+            ShowOptions();
+        }
+    }
+
+    /// <summary>
+    /// Tests a time of day string in HH:MM 24 hour format to see if it is a valid time of day
+    /// </summary>
+    /// <param name="raw">Input time of day string</param>
+    /// <param name="formattedString">Valid time of day string in HH:MM 24 hour format, if available</param>
+    /// <returns>True if the input string is a valid time of day</returns>
+    private static bool IsValidTimeOfDayString(string raw, out string formattedString)
+    {
+        CultureInfo enCA = new("en-CA");
+        formattedString = raw;
+
+        bool result = DateTime.TryParseExact(raw, "H:mm", enCA, DateTimeStyles.None, out DateTime timeOfDay);
+        if (result)
+        {
+            formattedString = timeOfDay.ToString("HH:mm");
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Tests a durationg string expressed as minutes and seconds (MM:SS) to see if it is valid
+    /// </summary>
+    /// <param name="raw">Input duration in minutes and seconds (MM:SS)</param>
+    /// <param name="formattedString">Valid duration string, if available</param>
+    /// <returns>True if the input string is a valid duration in minutes and seconds</returns>
+    private static bool IsValidMinutesAndSeconds(string raw, out string formattedString)
+    {
+        CultureInfo enCA = new("en-CA");
+        formattedString = raw;
+
+        bool result = TimeSpan.TryParseExact(raw, "%m\\:ss", enCA, out TimeSpan span);
+        if (result)
+        {
+            formattedString = span.ToString("mm\\:ss");
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Converts a valid duration expressed as a string in MM:SS format into the total number of seconds represented
+    /// </summary>
+    /// <param name="raw">Duration string in MM:SS format</param>
+    /// <returns>The total seconds in the duration</returns>
+    private static int SecondsFromMinutesAndSecondsString(string raw)
+    {
+        CultureInfo enCA = new("en-CA");
+        int result = 0;
+        if (IsValidMinutesAndSeconds(raw, out string formattedMinutesAndSeconds))
+        {
+            if (TimeSpan.TryParseExact(formattedMinutesAndSeconds,"%m\\:ss", enCA, out TimeSpan span))
+            {
+                result = (int)span.TotalSeconds;
+            }
+        }
+        return result;
+    }
+
+    private static string MinutesAndSecondsStringFromTotalSeconds(int seconds)
+    {
+        int wholeMinutes = (int)(seconds / 60);
+        if (wholeMinutes >= 100)
+        {
+            wholeMinutes = 99;  // Arbitrary maximum.
+        }
+        int remainingSeconds = seconds % 60;
+
+        return wholeMinutes.ToString("00") + ":" + remainingSeconds.ToString("00");
+    }
+
+    /// <summary>
+    /// Connect to the ATEM API based on current settings and test the availability of required inputs
+    /// </summary>
+    private void ConnectToAtem()
+    {
+        IsAtemConnected = false;
+
+        // If this is a reconnection, get rid of the old references first
+        if (_atem is not null)
+        {
+            _atem = null;
         }
 
-        /// <summary>
-        /// Tests a durationg string expressed as minutes and seconds (MM:SS) to see if it is valid
-        /// </summary>
-        /// <param name="raw">Input duration in minutes and seconds (MM:SS)</param>
-        /// <param name="formattedString">Valid duration string, if available</param>
-        /// <returns>True if the input string is a valid duration in minutes and seconds</returns>
-        private static bool IsValidMinutesAndSeconds(string raw, out string formattedString)
+        if (_appSettings.UseAtemConnection)
         {
-            CultureInfo enCA = new("en-CA");
-            formattedString = raw;
+            _atem = new(
+                atemIpAddress: Config.User.AtemIpAddress,
+                input1: Config.User.InputCam1Name,
+                input2: Config.User.InputCam2Name,
+                inputTitleCard: Config.User.InputTitleCardName,
+                inputCountdown: Config.User.InputCountdownName);
 
-            bool result = TimeSpan.TryParseExact(raw, "%m\\:ss", enCA, out TimeSpan span);
-            if (result)
-            {
-                formattedString = span.ToString("mm\\:ss");
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Converts a valid duration expressed as a string in MM:SS format into the total number of seconds represented
-        /// </summary>
-        /// <param name="raw">Duration string in MM:SS format</param>
-        /// <returns>The total seconds in the duration</returns>
-        private static int SecondsFromMinutesAndSecondsString(string raw)
-        {
-            CultureInfo enCA = new("en-CA");
-            int result = 0;
-            if (IsValidMinutesAndSeconds(raw, out string formattedMinutesAndSeconds))
-            {
-                if (TimeSpan.TryParseExact(formattedMinutesAndSeconds,"%m\\:ss", enCA, out TimeSpan span))
-                {
-                    result = (int)span.TotalSeconds;
-                }
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Connect to the ATEM API based on current settings and test the availability of required inputs
-        /// </summary>
-        private void ConnectToAtem()
-        {
-            // Flags for status of various LED indicators.
-            bool countDownInputOK = false;
-            bool mp1InputOK = false;
-            bool mp2InputOK = false;
-            bool auxOutputOK = false;
-            bool pvwOutputOK = false;
-            bool pgmOutputOK = false;
-
-            IsAtemConnected = false;
-            try
-            {
-                _switcherDiscovery.ConnectTo(LocalConfiguration.Settings.AtemIpAddress, out _atem, out _BMDSwitcherConnectToFailure failReason);
-                IsAtemConnected = true;
-
-                // If this is a reconnection, get rid of the old references first
-                if (_me0 != null)
-                {
-                    // Remove callback
-                    _me0.RemoveCallback(_mixEffectBlockMonitor);
-
-                    // Release reference
-                    _me0 = null;
-                }
-
-                // We want to get the first Mix Effect block (ME 1). We create a ME iterator,
-                // and then get the first one:
-                _me0 = null;
-
-                IBMDSwitcherMixEffectBlockIterator meIterator = null;
-                Guid meIteratorIID = typeof(IBMDSwitcherMixEffectBlockIterator).GUID;
-                _atem.CreateIterator(ref meIteratorIID, out IntPtr meIteratorPtr);
-                meIterator = (IBMDSwitcherMixEffectBlockIterator)Marshal.GetObjectForIUnknown(meIteratorPtr);
-                if (meIterator != null)
-                {
-                    meIterator.Next(out _me0);
-                    if (_me0 == null)
-                    {
-                        MessageBox.Show("Unexpected: Could not get first mix effect block", "Error");
-                        return;
-                    }
-                }
-                else
-                {
-                    // Not good.
-                    MessageBox.Show("Unexpected: Could not get mix effect block iterator", "Error");
-                    return;
-                }
-                // Install MixEffectBlockMonitor callbacks:
-                _me0.AddCallback(_mixEffectBlockMonitor);
-
-                // Go through the inputs and find the ones of interest...
-                foreach (var input in SwitcherInputs.ToList<IBMDSwitcherInput>())
-                {
-                    input.GetShortName(out string shortName);
-                    input.GetInputId(out long inputId);
-                    input.GetPortType(out _BMDSwitcherPortType portType);
-
-                    // Is this the countdown input?
-                    if (string.Compare(shortName.ToUpperInvariant(), LocalConfiguration.Settings.InputCountdown.ToUpperInvariant()) == 0)
-                    {
-                        // Make a note of the input ID (long), we need it for setting the Aux out.
-                        _clipInputId = inputId;
-                        if ((portType & _BMDSwitcherPortType.bmdSwitcherPortTypeExternal) == _BMDSwitcherPortType.bmdSwitcherPortTypeExternal)
-                        {
-                            countDownInputOK = true;
-                        }
-                    }
-                    // Is this the MP1 input?
-                    else if (string.Compare(shortName.ToUpperInvariant(), LocalConfiguration.Settings.InputMP1.ToUpperInvariant()) == 0)
-                    {
-                        // Make a note of the input ID (long), we need it for setting the Aux out.
-                        _inputMp1Id = inputId;
-                        if ((portType & _BMDSwitcherPortType.bmdSwitcherPortTypeMediaPlayerFill) == _BMDSwitcherPortType.bmdSwitcherPortTypeMediaPlayerFill)
-                        {
-                            mp1InputOK = true;
-                        }
-                    }
-                    // Is this the MP2 input?
-                    else if (string.Compare(shortName.ToUpperInvariant(), LocalConfiguration.Settings.InputMP2.ToUpperInvariant()) == 0)
-                    {
-                        // Make a note of the input ID (long), we need it for setting the Aux out.
-                        _inputMp2Id = inputId;
-                        if ((portType & _BMDSwitcherPortType.bmdSwitcherPortTypeMediaPlayerFill) == _BMDSwitcherPortType.bmdSwitcherPortTypeMediaPlayerFill)
-                        {
-                            mp2InputOK = true;
-                        }
-                    }
-                    // Is this the Aux Output?
-                    else if ((portType & _BMDSwitcherPortType.bmdSwitcherPortTypeAuxOutput) == _BMDSwitcherPortType.bmdSwitcherPortTypeAuxOutput)
-                    {
-                        // We need the reference to the actual port not just the long ID since we will be setting the input value.
-                        _auxOut = (IBMDSwitcherInputAux)input;
-                        auxOutputOK = true;
-                    }
-                    // Is this the Program Output?
-                    else if ((portType & _BMDSwitcherPortType.bmdSwitcherPortTypeMixEffectBlockOutput) == _BMDSwitcherPortType.bmdSwitcherPortTypeMixEffectBlockOutput
-                            && string.Compare(shortName.ToUpperInvariant(), "PGM") == 0)
-                    {
-                        _pgmOutId = inputId;
-                        pgmOutputOK = true;
-                    }
-                    // Is this the Preview Output?
-                    else if ((portType & _BMDSwitcherPortType.bmdSwitcherPortTypeMixEffectBlockOutput) == _BMDSwitcherPortType.bmdSwitcherPortTypeMixEffectBlockOutput
-                            && string.Compare(shortName.ToUpperInvariant(), "PVW") == 0)
-                    {
-                        _pvwOutId = inputId;
-                        pvwOutputOK = true;
-                    }
-                }
-            }
-            catch (COMException)
-            {
-                countDownInputOK = false;
-            }
+            IsAtemConnected = _atem.IsReady;
 
             // Show the status of various ATEM connections and input discoveries...
-            CountdownInputStatusLed.SelectedColour = countDownInputOK ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
-            MP1StatusLed.SelectedColour = mp1InputOK ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
-            MP2StatusLed.SelectedColour = mp2InputOK ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
-            AuxOutStatusLed.SelectedColour = auxOutputOK ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
-            PvwOutStatusLed.SelectedColour = pvwOutputOK ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
-            PgmOutStatusLed.SelectedColour = pgmOutputOK ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
+            CountdownInputStatusLed.SelectedColour = _atem.CountdownInputReady ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
+            TitleCardStatusLed.SelectedColour = _atem.InputTitleCardReady ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
+            Cam1StatusLed.SelectedColour = _atem.Input1Ready ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
+            Cam2StatusLed.SelectedColour = _atem.Input2Ready ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
+            AuxOutStatusLed.SelectedColour 
+                = _atem.AuxOutReady || !_appSettings.UseAuxOut 
+                ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
+            PvwOutStatusLed.SelectedColour = _atem.PvwOutReady ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
+            PgmOutStatusLed.SelectedColour = _atem.PgmOutReady ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
             // Do the overall connection.
             if (IsAtemConnected)
             {
@@ -554,300 +446,534 @@ namespace Mooseware.TimeToAir
                 // If we don't have a connection then the other items are indeterminate, so change the colour accordingly.
                 AtemApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
                 CountdownInputStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
-                MP1StatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
-                MP2StatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+                TitleCardStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+                Cam1StatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+                Cam2StatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
                 AuxOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
                 PvwOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
                 PgmOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
             }
             AtemApiStatusLed.IsOn = true;   // Not is connected. Always on once we know one way or the other.
-            CountdownInputStatusLed.IsOn = IsAtemConnected;
-            MP1StatusLed.IsOn = IsAtemConnected;
-            MP2StatusLed.IsOn = IsAtemConnected;
-            AuxOutStatusLed.IsOn = IsAtemConnected;
-            PvwOutStatusLed.IsOn = IsAtemConnected;
-            PgmOutStatusLed.IsOn = IsAtemConnected;
-
-            // Do the overall readiness light...
-            SwitcherReadinessLED.IsOn = true;
-            if (AtemApiStatusLed.SelectedColour == LightEmittingDiode.ColourOptions.Red
-                || !(auxOutputOK && pvwOutputOK && pgmOutputOK && countDownInputOK))
-            {
-                SwitcherReadinessLED.SelectedColour = LightEmittingDiode.ColourOptions.Red;
-
-            }
-            else if (!mp1InputOK || !mp2InputOK)
-            {
-                SwitcherReadinessLED.SelectedColour = LightEmittingDiode.ColourOptions.Yellow;
-
-            }
-            else
-            {
-                SwitcherReadinessLED.SelectedColour = LightEmittingDiode.ColourOptions.Green;
-            }
-
-            StyleRunButton();
-            SetOnAirDisplay();
+        }
+        else
+        {
+            // Not using the ATEM connection
+            AtemApiStatusLed.IsOn = false;
+            AtemApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+            CountdownInputStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+            TitleCardStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+            Cam1StatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+            Cam2StatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+            AuxOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+            PvwOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+            PgmOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
         }
 
-        /// <summary>
-        /// Get a list of Switcher Inputs - DANGER WILL ROBINSON: Don't invoke this if _atem is null!
-        /// </summary>
-        public IEnumerable<IBMDSwitcherInput> SwitcherInputs
+        CountdownInputStatusLed.IsOn = IsAtemConnected;
+        TitleCardStatusLed.IsOn = IsAtemConnected;
+        Cam1StatusLed.IsOn = IsAtemConnected;
+        Cam2StatusLed.IsOn = IsAtemConnected;
+        AuxOutStatusLed.IsOn = IsAtemConnected;
+        PvwOutStatusLed.IsOn = IsAtemConnected;
+        PgmOutStatusLed.IsOn = IsAtemConnected;
+
+        StyleRunButton();
+        SetOnAirDisplay();
+    }
+
+    private async Task ConnectToHyperDeck()
+    {
+        IsHyperDeckConnected = false;
+
+        // If this is a reconnection, get rid of the old reference first.
+        if (_hyperDeck is not null)
         {
-            get
-            {
-                // Create an input iterator
-                _atem.CreateIterator(typeof(IBMDSwitcherInputIterator).GUID, out IntPtr inputIteratorPtr);
-                if (Marshal.GetObjectForIUnknown(inputIteratorPtr) is not IBMDSwitcherInputIterator inputIterator)
-                {
-                    yield break;
-                }
-                // Scan through all inputs
-                while (true)
-                {
-                    inputIterator.Next(out IBMDSwitcherInput input);
-                    if (input != null)
-                    {
-                        yield return input;
-                    }
-                    else
-                    {
-                        yield break;
-                    }
-                }
-            }
+            _hyperDeck = null;
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        if (_appSettings.UseHyperDeckConnection)
         {
-            // Load the current settings and display them in the Options tab...
-            LoadSettings();
-            ShowOptions();
-            ConnectToAtem();
-
-            // Select the most appropriate start time based on the current clock on startup
-            CultureInfo enCA = new("en-CA");
-            DateTime nextEveningService = DateTime.MinValue;
-            DateTime nextMorningService = DateTime.MinValue;
-            if (DateTime.TryParseExact(LocalConfiguration.Settings.EveningStart, "HH:mm", enCA, DateTimeStyles.None, out DateTime thisEvening))
+            _hyperDeck = new(Config.User.HyperDeckIpAddress);
+            try
             {
-                // Are we past this time today?
-                if (DateTime.Compare(DateTime.Now, thisEvening) > 0)
+                IsHyperDeckConnected = await _hyperDeck.TestConnectionIsOKAsync();
+
+                if (IsHyperDeckConnected)
                 {
-                    // We're starting at this time tomorrow...
-                    thisEvening = thisEvening.AddDays(1);
-                }
-                nextEveningService = thisEvening;
-            }
-            if (DateTime.TryParseExact(LocalConfiguration.Settings.MorningStart, "HH:mm", enCA, DateTimeStyles.None, out DateTime thisMorning))
-            {
-                // Are we past this time today?
-                if (DateTime.Compare(DateTime.Now, thisMorning) > 0)
-                {
-                    // We're starting at this time tomorrow...
-                    thisMorning = thisMorning.AddDays(1);
-                }
-                nextMorningService = thisMorning;
-            }
-            if (DateTime.Compare(nextEveningService,nextMorningService)<0)
-            {
-                ServiceStartEvening.IsChecked = true;
-            }
-            else
-            {
-                ServiceStartMorning.IsChecked = true;
-            }
-
-            // Adjust the size, position and mode of the preview window according to the settings...
-            if (LocalConfiguration.Settings.RestoreWindowLocation)
-            {
-                _countdownViewer.Top = LocalConfiguration.Settings.WindowLocation.Y;
-                _countdownViewer.Left = LocalConfiguration.Settings.WindowLocation.X;
-                _countdownViewer.Height = LocalConfiguration.Settings.WindowSize.Height;
-                _countdownViewer.Width = LocalConfiguration.Settings.WindowSize.Width;
-
-                RestoreWindowLocationCheckbox.IsChecked = true;
-
-                if (LocalConfiguration.Settings.FullScreenViewer)
-                {
-                    FullScreenViewerCheckBox.IsChecked = true;
-                    _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Fullscreen);
+                    HyperDeckApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Green;
+                    HyperDeckApiStatusLed.IsOn = true;
+                    RecordingMinutesRemaining = await _hyperDeck.GetRemainingCapacityInMinutesAsync();
+                    RecordingCapacityTextBox.Text = RecordingMinutesRemaining.ToString();
+                    RecordingCapacityStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Green;
+                    if (RecordingMinutesRemaining <= _appSettings.RecordingMinutesYellow)
+                    {
+                        RecordingCapacityStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Yellow;
+                    }
+                    if (RecordingMinutesRemaining <= _appSettings.RecordingMinutesRed)
+                    {
+                        RecordingCapacityStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
+                    }
+                    RecordingCapacityStatusLed.IsOn = true;
+                    switch (_hyperDeck.Slot1Status)
+                    {
+                        case StorageSlotStatus.Unknown:
+                            SdCard1SpaceStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Yellow;
+                            break;
+                        case StorageSlotStatus.NotFull:
+                            SdCard1SpaceStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Green;
+                            break;
+                        case StorageSlotStatus.Full:
+                            SdCard1SpaceStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
+                            break;
+                        default:
+                            break;
+                    }
+                    SdCard1SpaceStatusLed.IsOn = true;
+                    switch (_hyperDeck.Slot2Status)
+                    {
+                        case StorageSlotStatus.Unknown:
+                            SdCard2SpaceStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Yellow;
+                            break;
+                        case StorageSlotStatus.NotFull:
+                            SdCard2SpaceStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Green;
+                            break;
+                        case StorageSlotStatus.Full:
+                            SdCard2SpaceStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
+                            break;
+                        default:
+                            break;
+                    }
+                    SdCard2SpaceStatusLed.IsOn = true;
                 }
                 else
                 {
-                    FullScreenViewerCheckBox.IsChecked = false;
-                    _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Normal);
+                    HyperDeckApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
+                    HyperDeckApiStatusLed.IsOn = true;
+                    SdCard1SpaceStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+                    SdCard1SpaceStatusLed.IsOn = false;
+                    SdCard2SpaceStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+                    SdCard2SpaceStatusLed.IsOn = false;
+                    RecordingCapacityTextBox.Text = "TBD";
+                    RecordingCapacityStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+                    RecordingCapacityStatusLed.IsOn = false;
                 }
             }
+            catch (Exception)
+            {
+                // There is no HyperDeck connection available
+            }
+        }
+    }
 
-            // Figure out the next on-air time...
-            DetermineNextStartTime();
-            // Start minding the time...
-            _heartbeat.Start();
-            _loaded = true;
+    private async Task ConnectToWebPresenter()
+    {
+        IsWebPresenterConnected = false;
+
+        // If this is a reconnection, get rid of the old reference first.
+        if (_webPresenter is not null)
+        {
+            _webPresenter = null;
         }
 
-        /// <summary>
-        /// Figure out the next on-air time (must be a point in the future)
-        /// </summary>
-        private void DetermineNextStartTime()
+        if (_appSettings.UseWebPresenterConnection)
         {
-            _OnAirTime = DateTime.MinValue;
-            
-            CultureInfo enCA = new("en-CA");
-            string timeToTry = string.Empty;
-
-            if ((bool)ServiceStartEvening.IsChecked)
+            _webPresenter = new(Config.User.WebPresenterIpAddress, _httpClientFactory);
+            try
             {
-                // Next start is an evening service.
-                timeToTry = LocalConfiguration.Settings.EveningStart;
-            }
-            else if ((bool)ServiceStartMorning.IsChecked)
-            {
-                // Next start is a morning service.
-                timeToTry = LocalConfiguration.Settings.MorningStart;
-            }
-            else if ((bool)ServiceStartCustom.IsChecked)
-            {
-                // Next start is at a custom time, as long as a valid one is provided.
-                if (IsValidTimeOfDayString(CustomStartTimeTextBox.Text, out string validCustomStartTime))
+                IsWebPresenterConnected = await _webPresenter.Ping();
+                if (IsWebPresenterConnected)
                 {
-                    timeToTry = validCustomStartTime;
+                    WebPresenterApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Green;
                 }
-            }
-            // Do we have a good starting time?
-            if (DateTime.TryParseExact(timeToTry, "HH:mm", enCA, DateTimeStyles.None, out DateTime timeOfDayToday))
-            {
-                // Are we past this time today?
-                if (DateTime.Compare(DateTime.Now, timeOfDayToday) > 0)
+                else
                 {
-                    // We're starting at this time tomorrow...
-                    timeOfDayToday = timeOfDayToday.AddDays(1);
+                    WebPresenterApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
                 }
-                _OnAirTime = timeOfDayToday;
+                WebPresenterApiStatusLed.IsOn = true;
+            }
+            catch (Exception)
+            {
+                // There is no WebPresenter connection available
             }
         }
+    }
 
-        /// <summary>
-        /// Display the current configuration options on the Options tab
-        /// </summary>
-        private void ShowOptions()
+    private void ConnectToPtzCameras()
+    {
+        IsCam1Connected = false;
+        IsCam2Connected = false;
+
+        PtzCameraController ptzCam;
+        if (_appSettings.UsePtzCameraConnections)
         {
-            AtemIpAddressTextBox.Text = LocalConfiguration.Settings.AtemIpAddress;
-            CountdownInputTextBox.Text = LocalConfiguration.Settings.InputCountdown;
-            MP1InputTextBox.Text = LocalConfiguration.Settings.InputMP1;
-            MP2InputTextBox.Text = LocalConfiguration.Settings.InputMP2;
-            EveningServiceStartTimeTextBox.Text = LocalConfiguration.Settings.EveningStart;
-            MorningServiceStartTimeTextBox.Text = LocalConfiguration.Settings.MorningStart;
-            WallpaperFilespecTextBox.Text = LocalConfiguration.Settings.WallpaperFilespec;
-            XPositionTextBox.Text = LocalConfiguration.Settings.XPosition.ToString();
-            YPositionTextBox.Text = LocalConfiguration.Settings.YPosition.ToString();
-            TurnGreenTextBox.Text = LocalConfiguration.Settings.TurnGreen;
-            TurnYellowTextBox.Text = LocalConfiguration.Settings.TurnYellow;
-            FontSizeTextBox.Text = LocalConfiguration.Settings.FontSize.ToString();
-
-            // Other places they show up...
-            ServiceStartEvening.Content = "Evening " + LocalConfiguration.Settings.EveningStart;
-            ServiceStartMorning.Content = "Morning " + LocalConfiguration.Settings.MorningStart;
-            CustomStartTimeTextBox.Text = LocalConfiguration.Settings.LastCustomStart;
-
-            // Apply the options as well...
-            _countdownViewer.SetWallpaperImage(LocalConfiguration.Settings.WallpaperFilespec);
-            _countdownViewer.SetBaseFontSize(LocalConfiguration.Settings.FontSize);
-            _countdownViewer.SetHorizontalMargin(LocalConfiguration.Settings.XPosition);
-            _countdownViewer.SetBottomMargin(LocalConfiguration.Settings.YPosition);
-
-            SetOnAirDisplay();
-        }
-
-        /// <summary>
-        /// Configure the UI elements of the ON AIR sign based on whether we are on air or not
-        /// </summary>
-        private void SetOnAirDisplay()
-        {
-            if (IsOnAir() && SuppressOnAirNotificationCheckbox.IsChecked == false)
+            try
             {
-                _countdownViewer.SetOnAir(true);
-                OnAirLightBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.PlayingMainBrush);
-                OnAirLightBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.PlayingBackgroundBrush);
-                OnAirLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.PlayingMainBrush);
+                ptzCam = new(Config.User.Camera1IpAddress);
+                IsCam1Connected = ptzCam.IsConnected;
+                ptzCam = null;
+
+                ptzCam = new(Config.User.Camera2IpAddress);
+                IsCam2Connected = ptzCam.IsConnected;
+                ptzCam = null;
+            }
+            catch (Exception)
+            {
+                // No PTZ Cam connection
+            }
+            if (IsCam1Connected)
+            {
+                Camera1ConnectionStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Green;
             }
             else
             {
-                _countdownViewer.SetOnAir(false);
-                OnAirLightBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
-                OnAirLightBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.DisabledBackgroundBrush);
-                OnAirLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+                Camera1ConnectionStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
             }
-        }
-
-        private void ServiceStartEvening_Checked(object sender, RoutedEventArgs e)
-        {
-            if (_loaded)
+            Camera1ConnectionStatusLed.IsOn = true;
+            if (IsCam2Connected)
             {
-                DetermineNextStartTime();
+                Camera2ConnectionStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Green;
             }
-        }
-
-        private void ServiceStartMorning_Checked(object sender, RoutedEventArgs e)
-        {
-            if (_loaded)
+            else
             {
-                DetermineNextStartTime();
+                Camera2ConnectionStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
             }
+            Camera2ConnectionStatusLed.IsOn = true;
         }
+    }
 
-        private void ServiceStartCustom_Checked(object sender, RoutedEventArgs e)
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        // Load the current settings and display them in the Options tab...
+        ShowOptions();
+        SetGoLiveModeIndicatorDisplay();
+
+        // Adjust the size, position and mode of the preview window according to the settings...
+        if (Config.User.RestoreWindowLocation)
         {
-            if (_loaded)
+            _countdownViewer.Top = Config.User.WindowLocation.Y;
+            _countdownViewer.Left = Config.User.WindowLocation.X;
+            _countdownViewer.Height = Config.User.WindowSize.Height;
+            _countdownViewer.Width = Config.User.WindowSize.Width;
+
+            RestoreWindowLocationCheckbox.IsChecked = true;
+
+            if (Config.User.FullScreenViewer)
             {
-                DetermineNextStartTime();
+                FullScreenViewerCheckBox.IsChecked = true;
+                _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Fullscreen);
             }
-        }
-
-        private void CustomStartTimeTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_loaded)
+            else
             {
-                DetermineNextStartTime();
-                if (CustomStartTimeTextBox.Text.Trim() != LocalConfiguration.Settings.LastCustomStart)
-                {
-                    // Is the new value valid?
-                    if (IsValidTimeOfDayString(CustomStartTimeTextBox.Text, out string formattedTimeOfDay))
-                    {
-                        LocalConfiguration.Settings.LastCustomStart = formattedTimeOfDay;
-                        LocalConfiguration.Save();
-                    }
-                }
+                FullScreenViewerCheckBox.IsChecked = false;
+                _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Normal);
             }
         }
 
-        private void RunButton_Click(object sender, RoutedEventArgs e)
+        // Show the current application version number and copyright notice.
+        string copyrightNotice = string.Empty;
+        var attribs = Assembly.GetEntryAssembly()?.GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
+        if (attribs?.Length > 0)
         {
-            ToggleRunningStatus(RunAction.Toggle);
+            copyrightNotice = ((AssemblyCopyrightAttribute)attribs[0]).Copyright;
         }
+        AppVersionTextBlock.Text = "Version: "
+            + Assembly.GetExecutingAssembly()?.GetName()?.Version?.ToString()
+            + "  "
+            + copyrightNotice;
 
-        /// <summary>
-        /// Configure the ATEM based on the indicated run action
-        /// </summary>
-        /// <param name="runAction">Choose whether to run, stop or toggle the state of the ATEM auxiliary output</param>
-        private void ToggleRunningStatus(RunAction runAction)
+        // Give the app a couple of seconds to paint and then do a full round of connection tests
+        _pendingTestStart = DateTime.Now.AddSeconds(_appSettings.SecondsToWaitForTesting);
+
+        ShowTestStatus();
+
+        RunAction showHideAction = Config.User.CountdownShown ? RunAction.ForceRun : RunAction.ForceStop;
+        SetOnAirDisplay();
+        ToggleRunningStatus(showHideAction);
+
+        // And start minding the time...
+        _heartbeat.Start();
+        _loaded = true;
+    }
+
+    /// <summary>
+    /// Figure out the next on-air time (must be a point in the future)
+    /// </summary>
+    private void DetermineNextStartTime()
+    {
+        _onAirTime = DateTime.MinValue;
+        IsScheduleConnected = false;
+
+        bool sourceIsApi = false;
+
+        if (_appSettings.ForceTestCountdownSeconds > 0)
         {
-            bool currentlyRunning = false;
-            if (_auxOut != null)
+            // appsettings.json includes a forced countdown value for testing purposes.
+            // This overrides any other consideration for determining On Air Time
+            _onAirTime = DateTime.Now.AddSeconds(_appSettings.ForceTestCountdownSeconds);
+            _nextEventTitle = "Test Event";
+            _nextEventSubtitle = "Forced Start Time";
+        }
+        else if (_appSettings.UseScheduleApiConnection)
+        {
+            string streamDate = string.Empty;
+            string startTime = string.Empty;
+            // Get the next start time based on the schedule API
+            var web = new HtmlWeb();
+            var doc = web.Load(_appSettings.EventScheduleUrl);
+            if (doc != null)
             {
-                _auxOut.GetInputSource(out long auxInput);
-                currentlyRunning = (auxInput == _clipInputId);
+                // Get the next livestream details: Title, Subtitle, Start Date and Time
+                streamDate = doc.GetElementbyId("streamdate")?.InnerText ?? string.Empty;
+                startTime = doc.GetElementbyId("starttime")?.InnerText ?? string.Empty;
+                _nextEventTitle = doc.GetElementbyId("streamtitle")?.InnerText ?? "Schedule unavailable";
+                _nextEventSubtitle = doc.GetElementbyId("streamsubtitle")?.InnerText ?? string.Empty;
             }
 
+            // Can we parse a date and time out of the values retrieved from the API?
+            if (DateTime.TryParseExact(streamDate + " " + startTime, "yyyy-MM-dd HH:mm",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeLocal, out DateTime parsedDateTime))
+            {
+                _onAirTime = parsedDateTime;
+                EventScheduleApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Green;
+                IsScheduleConnected = true;
+                sourceIsApi = true;
+            }
+            else
+            {
+                EventScheduleApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
+            }
+            EventScheduleApiStatusLed.IsOn = true;
+        }
+
+        // If it didn't work or if we're not using the schedule API, guess morning/evening based on current clock
+        if (_onAirTime < DateTime.Now)
+        {
+            DateTime nextEveningService = new(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 20, 0, 0);
+            // Are we past this time today?
+            if (DateTime.Compare(DateTime.Now, nextEveningService) > 0)
+            {
+                // We're starting at this time tomorrow...
+                nextEveningService = nextEveningService.AddDays(1);
+            }
+            DateTime nextMorningService = new(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 0);
+            // Are we past this time today?
+            if (DateTime.Compare(DateTime.Now, nextMorningService) > 0)
+            {
+                // We're starting at this time tomorrow...
+                nextMorningService = nextMorningService.AddDays(1);
+            }
+            if (DateTime.Compare(nextEveningService, nextMorningService) < 0)
+            {
+                _onAirTime = nextEveningService;
+                _nextEventTitle = "Solel Evening Service";
+                _nextEventSubtitle = string.Empty;
+            }
+            else
+            {
+                _onAirTime = nextMorningService;
+                _nextEventTitle = "Solel Morning Service";
+                _nextEventSubtitle = string.Empty;
+            }
+            if (_appSettings.UseScheduleApiConnection)
+            {
+                EventScheduleApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
+                EventScheduleApiStatusLed.IsOn = true;
+            }
+            else
+            {
+                EventScheduleApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+                EventScheduleApiStatusLed.IsOn = false;
+            }
+        }
+
+        // Show the next event details in the GUI
+        string nextStreamEventDescription = _nextEventTitle 
+            + (_nextEventSubtitle.Length > 0  ? " - " : string.Empty)
+            + _nextEventSubtitle;
+        NextStreamCountdownText.Text = nextStreamEventDescription;
+        if (_onAirTime.Date != DateTime.Now.Date)
+        {
+            // Include the date in the description
+            NextStreamCountdownText.Text += ": " + _onAirTime.ToString("dddd d MMMM");
+        }
+
+        if (sourceIsApi)
+        {
+            StreamEventsScheduleDetailsTextBlock.Text = nextStreamEventDescription;
+        }
+        else
+        {
+            StreamEventsScheduleDetailsTextBlock.Text = "Schedule unavailable, presuming:";
+        }
+        StreamEventsScheduleDetailsTextBlock.Text += " " + _onAirTime.ToString("dddd d MMMM HH:mm");
+
+        // Once we have an answer (even if it's a guess) the UI on the main tab should show as "settled"
+        NextStreamCountdownText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
+        NextStreamCountdownLabelText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
+    
+        // Determine the other derived deadlines based on whatever has been identified thus far
+        if (_onAirTime != DateTime.MinValue)
+        {
+            _streamStartTime = _onAirTime.AddSeconds(-1 * SecondsFromMinutesAndSecondsString(Config.User.StartStreaming));
+            _startRecordingTime = _onAirTime.AddSeconds(-1 * SecondsFromMinutesAndSecondsString(Config.User.StartRecording));
+            _secondaryCameraPreviewTime = _onAirTime.AddSeconds(_appSettings.SecondaryCameraPreviewDelay);
+        }
+        else
+        {
+            _streamStartTime = DateTime.MaxValue;
+            _startRecordingTime = DateTime.MaxValue;
+            _secondaryCameraPreviewTime = DateTime.MaxValue;
+        }
+    }
+
+    /// <summary>
+    /// Display the current configuration options on the Options tab
+    /// </summary>
+    private void ShowOptions()
+    {
+        // Connections Tab
+        AtemIpAddressTextBox.Text = Config.User.AtemIpAddress;
+        CountdownInputTextBox.Text = Config.User.InputCountdownName;
+        TitleCardInputTextBox.Text = Config.User.InputTitleCardName;
+        Camera1InputTextBox.Text = Config.User.InputCam1Name;
+        Camera2InputTextBox.Text = Config.User.InputCam2Name;
+        WebPresenterIpAddressTextBox.Text = Config.User.WebPresenterIpAddress;
+        HyperDeckIpAddressTextBox.Text = Config.User.HyperDeckIpAddress;
+        Camera1IpAddressTextBox.Text = Config.User.Camera1IpAddress;
+        Camera2IpAddressTextBox.Text = Config.User.Camera2IpAddress;
+        
+        // Countdown Options Tab
+        TurnGreenTextBox.Text = Config.User.TurnGreen;
+        StartStreamTextBox.Text = Config.User.StartStreaming;
+        TurnYellowTextBox.Text = Config.User.TurnYellow;
+        StartRecordingTextBox.Text = Config.User.StartRecording;
+        AutoShutdownCheckBox.IsChecked = Config.User.ShutDownAfterGoLive;
+        AutoCloseTime.Text = MinutesAndSecondsStringFromTotalSeconds(_appSettings.AutoShutdownTimeout);
+        WallpaperFilespecTextBox.Text = Config.User.WallpaperFilespec;
+        XPositionTextBox.Text = Config.User.XPosition.ToString();
+        YPositionTextBox.Text = Config.User.YPosition.ToString();
+        FontSizeTextBox.Text = Config.User.FontSize.ToString();
+        FullScreenViewerCheckBox.IsChecked = Config.User.FullScreenViewer;
+        RestoreWindowLocationCheckbox.IsChecked = Config.User.RestoreWindowLocation;
+        SuppressOnAirNotificationCheckbox.IsChecked = Config.User.SuppressOnAirNotification;
+        
+        // Other Options Tab
+        StreamDescriptionShabbatEveningTextBox.Text = Config.User.StreamDescriptionShabbatPM;
+        StreamDescriptionFestivalEveningTextBox.Text = Config.User.StreamDescriptionFestivalPM;
+        StreamDescriptionShabbatMorningTextBox.Text = Config.User.StreamDescriptionShabbatAM;
+        StreamDescriptionFestivalMorningTextBox.Text = Config.User.StreamDescriptionFestivalAM;
+        RecordingFileNameTextBox.Text = Config.User.LocalRecordingName;
+        PtzSetup1NameTextBox.Text = Config.User.PtzSetup1Name;
+        PtzSetup1Cam1.IsChecked = (Config.User.PtzSetup1Preview == 1);
+        PtzSetup1Cam2.IsChecked = (Config.User.PtzSetup1Preview != 1);
+        PtzSetup1Cam1Preset.Text = Config.User.PtzSetup1Cam1.ToString();
+        PtzSetup1Cam2Preset.Text = Config.User.PtzSetup1Cam2.ToString();
+        PtzSetup2NameTextBox.Text = Config.User.PtzSetup2Name;
+        PtzSetup2Cam1.IsChecked = (Config.User.PtzSetup2Preview == 1);
+        PtzSetup2Cam2.IsChecked = (Config.User.PtzSetup2Preview != 1);
+        PtzSetup2Cam1Preset.Text = Config.User.PtzSetup2Cam1.ToString();
+        PtzSetup2Cam2Preset.Text = Config.User.PtzSetup2Cam2.ToString();
+        PtzSetup3NameTextBox.Text = Config.User.PtzSetup3Name;
+        PtzSetup3Cam1.IsChecked = (Config.User.PtzSetup3Preview == 1);
+        PtzSetup3Cam2.IsChecked = (Config.User.PtzSetup3Preview != 1);
+        PtzSetup3Cam1Preset.Text = Config.User.PtzSetup3Cam1.ToString();
+        PtzSetup3Cam2Preset.Text = Config.User.PtzSetup3Cam2.ToString();
+        PtzSetup4NameTextBox.Text = Config.User.PtzSetup4Name;
+        PtzSetup4Cam1.IsChecked = (Config.User.PtzSetup4Preview == 1);
+        PtzSetup4Cam2.IsChecked = (Config.User.PtzSetup4Preview != 1);
+        PtzSetup4Cam1Preset.Text = Config.User.PtzSetup4Cam1.ToString();
+        PtzSetup4Cam2Preset.Text = Config.User.PtzSetup4Cam2.ToString();
+        switch (Config.User.PtzDefaultPM)
+        {
+            case 1:
+                PtzSetup1PmDefault.IsChecked = true;
+                break;
+            case 2:
+                PtzSetup2PmDefault.IsChecked = true;
+                break;
+            case 3:
+                PtzSetup3PmDefault.IsChecked = true;
+                break;
+            case 4:
+                PtzSetup4PmDefault.IsChecked = true;
+                break;
+            default:
+                PtzSetup1PmDefault.IsChecked = true;
+                break;
+        }
+        switch (Config.User.PtzDefaultAM)
+        {
+            case 1:
+                PtzSetup1AmDefault.IsChecked = true;
+                break;
+            case 2:
+                PtzSetup2AmDefault.IsChecked = true;
+                break;
+            case 3:
+                PtzSetup3AmDefault.IsChecked = true;
+                break;
+            case 4:
+                PtzSetup4AmDefault.IsChecked = true;
+                break;
+            default:
+                PtzSetup1AmDefault.IsChecked = true;
+                break;
+        }
+
+        // Apply the options as well...
+        _countdownViewer.SetWallpaperImage(Config.User.WallpaperFilespec);
+        _countdownViewer.SetBaseFontSize(Config.User.FontSize);
+        _countdownViewer.SetHorizontalMargin(Config.User.XPosition);
+        _countdownViewer.SetBottomMargin(Config.User.YPosition);
+
+    }
+
+    /// <summary>
+    /// Configure the UI elements of the ON AIR sign based on whether we are on air or not
+    /// </summary>
+    private void SetOnAirDisplay()
+    {
+        if (IsOnAir() && SuppressOnAirNotificationCheckbox.IsChecked == false)
+        {
+            _countdownViewer.SetOnAir(true);
+            OnAirLightBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.PlayingMainBrush);
+            OnAirLightBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.PlayingBackgroundBrush);
+            OnAirLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.PlayingMainBrush);
+        }
+        else
+        {
+            _countdownViewer.SetOnAir(false);
+            OnAirLightBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            OnAirLightBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.DisabledBackgroundBrush);
+            OnAirLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+        }
+    }
+
+    private void RunButton_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleRunningStatus(RunAction.Toggle);
+    }
+
+    /// <summary>
+    /// Configure the ATEM based on the indicated run action
+    /// </summary>
+    /// <param name="runAction">Choose whether to run, stop or toggle the state of the ATEM auxiliary output</param>
+    private void ToggleRunningStatus(RunAction runAction)
+    {
+        bool currentlyRunning = _appSettings.UseAtemConnection 
+            && _atem is not null
+            && _atem.IsCurrentlyRunning;
+
+        if (_appSettings.UseAtemConnection && _atem is not null)
+        {
             if (((runAction == RunAction.Toggle) && currentlyRunning) || (runAction == RunAction.ForceStop))
             {
-                _auxOut.SetInputSource(_pgmOutId);
+                _atem.SendProgramToAux();
             }
             else if (((runAction == RunAction.Toggle) && !currentlyRunning) || (runAction == RunAction.ForceRun))
             {
-                _auxOut.SetInputSource(_clipInputId);
+                _atem.SendCountdownToAux();
             }
             // Otherwise we're already good.
 
@@ -863,56 +989,104 @@ namespace Mooseware.TimeToAir
             {
                 currentlyRunning = !currentlyRunning;
             }
-            StyleRunButton(currentlyRunning);
         }
+        StyleRunButton(currentlyRunning);
 
-        /// <summary>
-        /// Set the appearance of the Show/Hide Countdown button depending on the current operating mode
-        /// </summary>
-        private void StyleRunButton()
+        // Note the current state for future.
+        Config.User.CountdownShown = currentlyRunning;
+    }
+
+    /// <summary>
+    /// Set the appearance of the Show/Hide Countdown button depending on the current operating mode
+    /// </summary>
+    private void StyleRunButton()
+    {
+        bool currentlyRunning = false;
+        if (_appSettings.UseAtemConnection && _atem.AuxOutReady)
         {
-            bool currentlyRunning = false;
-            if (_auxOut != null)
-            {
-                _auxOut.GetInputSource(out long auxInput);
-                currentlyRunning = (auxInput == _clipInputId);
-            }
-            StyleRunButton(currentlyRunning);
+            currentlyRunning = _atem.IsCurrentlyRunning;
         }
+        StyleRunButton(currentlyRunning);
+    }
 
-        /// <summary>
-        /// Set the appearance of the Show/Hide Countdown button depending on the current operating mode
-        /// </summary>
-        /// <param name="currentlyRunning">Use True if the countdown is being displayed currently, false otherwise</param>
-        private void StyleRunButton(bool currentlyRunning)
+    /// <summary>
+    /// Set the appearance of the Show/Hide Countdown button and countdown status indicator depending on the current operating mode
+    /// </summary>
+    /// <param name="currentlyRunning">Use True if the countdown is being displayed currently, false otherwise</param>
+    private void StyleRunButton(bool currentlyRunning)
+    {
+        if (_appSettings.UseAtemConnection && IsAtemConnected)
         {
+            RunButton.IsEnabled = true;
             if (currentlyRunning)
             {
-                RunButton.Content = "     Hide\nCountdown";
-                RunButton.Foreground = AppResources.DefinedColour(AppResources.StaticResource.PlayingContrastBrush);
-                RunButton.Background = AppResources.DefinedColour(AppResources.StaticResource.PlayingMainBrush);
+                CountdownIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.ReadyBackgroundBorderBrush);
+                CountdownIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.ReadyMainBrush);
+                CountdownLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+                CountdownLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+                CountdownLightText.Text = "Shown";
+                RunButton.Content = "Hide";
             }
             else
             {
-                RunButton.Foreground = AppResources.DefinedColour(AppResources.StaticResource.CuedContrastBrush);
-                RunButton.Background = AppResources.DefinedColour(AppResources.StaticResource.CuedMainBrush);
-                RunButton.Content = "     Show\nCountdown";
+                CountdownIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.CautionBackgroundBorderBrush);
+                CountdownIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.CautionMainBrush);
+                CountdownLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.CautionMainBrush);
+                CountdownLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.CautionMainBrush);
+                CountdownLightText.Text = "Hidden";
+                RunButton.Content = "Show";
             }
         }
-
-        private void Heartbeat_Tick(object sender, EventArgs e)
+        else
         {
-            // Update the time displays
-            CurrentTimeMessage.Text = DateTime.Now.ToString("HH:mm:ss");
+            RunButton.IsEnabled = false;
+            CountdownIndicatorBorder.Background = GetResource<SolidColorBrush>("Button.Disabled.Background");
+            CountdownIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            CountdownLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            CountdownLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            CountdownLightText.Text = "Hidden";
+            RunButton.Content = "Show";
+        }
+    }
 
+    private void Heartbeat_Tick(object sender, EventArgs e)
+    {
+        // Check to see if a connection test is pending...
+        if (DateTime.Compare(DateTime.Now, _pendingTestStart) >= 0)
+        {
+            // Start some tests
+            PerformTests();
+        }
+
+        if (_appSettings.UseAtemConnection)
+        {
+            SetOnAirDisplay();
+            SetAudioStatusDisplay();
+        }
+
+        if (_onAirTime > DateTime.MinValue)
+        {
             // How long until the next service start?
-            TimeSpan tMinus = TimeSpan.FromSeconds((_OnAirTime - DateTime.Now).TotalSeconds + 1);
-            TimeToAirMessage.Text = tMinus.ToString("hh\\:mm\\:ss");
+            TimeSpan tMinus = TimeSpan.FromSeconds((_onAirTime - DateTime.Now).TotalSeconds + 1);
+
+            if (tMinus.TotalHours > 100)
+            {
+                TimeToAirMessage.Text = ((int)tMinus.TotalHours).ToString() + "+ hrs";
+            }
+            else
+            {
+                TimeToAirMessage.Text = (tMinus.TotalHours >= 1 ? (((int)tMinus.TotalHours).ToString() + ":") : string.Empty)
+                                      + tMinus.ToString("mm\\:ss");
+            }
+
             // Show it on the viewer.
             _countdownViewer.SetCountdownTime(tMinus);
 
+            TimeToAirIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.SubduedForegroundBrush);
+            TimeToAirLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.SubduedForegroundBrush);
+
             // Set the colour according to the time remaining.
-            if (DateTime.Compare(DateTime.Now,_OnAirTime)==1)
+            if (DateTime.Compare(DateTime.Now, _onAirTime) == 1)
             {
                 // When the clock runs down, stop showing the countdown.
                 TimeToAirMessage.Foreground = AppResources.DefinedColour(AppResources.StaticResource.PlayingMainBrush);
@@ -920,12 +1094,12 @@ namespace Mooseware.TimeToAir
 
                 ToggleRunningStatus(RunAction.ForceStop);
             }
-            else if ((int)tMinus.TotalSeconds <= SecondsFromMinutesAndSecondsString(LocalConfiguration.Settings.TurnYellow))
+            else if ((int)tMinus.TotalSeconds <= SecondsFromMinutesAndSecondsString(Config.User.TurnYellow))
             {
                 TimeToAirMessage.Foreground = AppResources.DefinedColour(AppResources.StaticResource.CountdownWarningBrush);
                 _countdownViewer.SetCountdownColour(CountdownViewer.CountdownColour.Yellow);
             }
-            else if ((int)tMinus.TotalSeconds <= SecondsFromMinutesAndSecondsString(LocalConfiguration.Settings.TurnGreen))
+            else if ((int)tMinus.TotalSeconds <= SecondsFromMinutesAndSecondsString(Config.User.TurnGreen))
             {
                 TimeToAirMessage.Foreground = AppResources.DefinedColour(AppResources.StaticResource.CuedMainBrush);
                 _countdownViewer.SetCountdownColour(CountdownViewer.CountdownColour.Green);
@@ -936,108 +1110,808 @@ namespace Mooseware.TimeToAir
                 _countdownViewer.SetCountdownColour(CountdownViewer.CountdownColour.White);
             }
         }
-
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        else
         {
-            // If we're showing the countdown, then take that down so as not to leave things hanging...
-            ToggleRunningStatus(RunAction.ForceStop);
-
-            // Save viewer window settings before closing...
-            if (RestoreWindowLocationCheckbox.IsChecked?? false == true)
-            {
-                // Note the size, position and mode of the viewer window...
-                LocalConfiguration.Settings.WindowLocation = new System.Drawing.Point
-                    (Convert.ToInt32(_countdownViewer.Left), Convert.ToInt32(_countdownViewer.Top));
-                LocalConfiguration.Settings.WindowSize = new System.Drawing.Size
-                    (Convert.ToInt32(_countdownViewer.Width), Convert.ToInt32(_countdownViewer.Height));
-                LocalConfiguration.Settings.FullScreenViewer = FullScreenViewerCheckBox.IsChecked ?? false;
-            }
-            LocalConfiguration.Settings.RestoreWindowLocation = RestoreWindowLocationCheckbox.IsChecked ?? false;
-            LocalConfiguration.Settings.SuppressOnAirNotification = SuppressOnAirNotificationCheckbox.IsChecked ?? false;
-            LocalConfiguration.Save();
-
-            _countdownViewer.ShutDownViewer();
+            TimeToAirIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            TimeToAirLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            TimeToAirMessage.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            TimeToAirMessage.Text = "TBD";
         }
 
-        private void FullScreenViewerCheckBox_Checked(object sender, RoutedEventArgs e)
+        ConsiderAutomaticActions();
+    }
+
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        // If we're showing the countdown, then take that down so as not to leave things hanging...
+        ToggleRunningStatus(RunAction.ForceStop);
+
+        // Save viewer window settings before closing...
+        if (RestoreWindowLocationCheckbox.IsChecked?? false == true)
         {
-            if (_loaded)
-            {
-                _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Fullscreen);
-            }
+            // Note the size, position and mode of the viewer window...
+            Config.User.WindowLocation = new System.Drawing.Point
+                (Convert.ToInt32(_countdownViewer.Left), Convert.ToInt32(_countdownViewer.Top));
+            Config.User.WindowSize = new System.Drawing.Size
+                (Convert.ToInt32(_countdownViewer.Width), Convert.ToInt32(_countdownViewer.Height));
+            Config.User.FullScreenViewer = FullScreenViewerCheckBox.IsChecked ?? false;
+        }
+        Config.User.RestoreWindowLocation = RestoreWindowLocationCheckbox.IsChecked ?? false;
+        Config.User.SuppressOnAirNotification = SuppressOnAirNotificationCheckbox.IsChecked ?? false;
+        Config.User.Save();
+
+        _countdownViewer.ShutDownViewer();
+    }
+
+    private void FullScreenViewerCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_loaded)
+        {
+            _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Fullscreen);
+        }
+    }
+
+    private void FullScreenViewerCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_loaded)
+        {
+            _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Normal);
+        }
+    }
+
+    private void RefreshAtemConnectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        Config.User.AtemIpAddress = AtemIpAddressTextBox.Text.Trim();
+        Config.User.Save();
+        ConnectToAtem();
+        ShowTestStatus();
+    }
+
+    private void ChooseWallpaperButton_Click(object sender, RoutedEventArgs e)
+    {
+        Microsoft.Win32.OpenFileDialog dlg = new()
+        {
+            AddExtension = true,
+            CheckFileExists = true,
+            CheckPathExists = true,
+            Filter = "JPG|*.jpg|PNG|*.png|All Files|*.*",
+            Multiselect = false,
+            Title = "TimeToAir - Choose Wallpaper Image"
+        };
+        if ((bool)dlg.ShowDialog())
+        {
+            WallpaperFilespecTextBox.Text = dlg.FileName;
+        }
+    }
+
+    /// <summary>
+    /// Determines whether the ATEM Program source is one of the media players or not
+    /// </summary>
+    /// <returns>True when the program source is something other than a media player</returns>
+    private bool IsOnAir()
+    {
+        bool result = false;
+
+        if (IsAtemConnected)
+        {
+            result = _atem.IsOnAir;
         }
 
-        private void FullScreenViewerCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (_loaded)
-            {
-                _countdownViewer.SetViewerMode(CountdownViewer.ViewerMode.Normal);
-            }
-        }
+        return result;
+    }
 
-        private void RefreshAtemConnectionButton_Click(object sender, RoutedEventArgs e)
+    private void RestoreWindowLocationCheckbox_Checked(object sender, RoutedEventArgs e)
+    {
+        Config.User.RestoreWindowLocation = true;
+    }
+
+    private void RestoreWindowLocationCheckbox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        Config.User.RestoreWindowLocation = false;
+    }
+
+    private void SuppressOnAirNotificationCheckbox_Checked(object sender, RoutedEventArgs e)
+    {
+        SetOnAirDisplay();
+    }
+
+    private void SuppressOnAirNotificationCheckbox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        SetOnAirDisplay();
+    }
+
+    private async void RefreshWebPresenterConnectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        Config.User.WebPresenterIpAddress = WebPresenterIpAddressTextBox.Text.Trim();
+        Config.User.Save();
+        await ConnectToWebPresenter();
+        ShowTestStatus();
+    }
+
+    private async void RefreshHyperDeckConnectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        Config.User.HyperDeckIpAddress = HyperDeckIpAddressTextBox.Text.Trim();
+        Config.User.Save();
+        await ConnectToHyperDeck();
+        ShowTestStatus();
+    }
+
+    private void RefreshPtzCameraConnectionsButton_Click(object sender, RoutedEventArgs e)
+    {
+        Config.User.Camera1IpAddress = Camera1IpAddressTextBox.Text.Trim();
+        Config.User.Camera2IpAddress = Camera2IpAddressTextBox.Text.Trim();
+        Config.User.Save();
+        ConnectToPtzCameras();
+        ShowTestStatus();
+    }
+
+    private void RefreshEventScheduleApiButton_Click(object sender, RoutedEventArgs e)
+    {
+        DetermineNextStartTime();
+        ShowTestStatus();
+    }
+
+    private void TestStatusButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Give the app a couple of seconds to paint and then do a full round of connection tests
+        _pendingTestStart = DateTime.Now.AddSeconds(_appSettings.SecondsToWaitForTesting);
+
+        ShowTestStatus();
+    }
+
+    private void StatusIndicatorBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_inCautionStatus)
         {
+            // See https://stackoverflow.com/questions/7929646/how-to-programmatically-select-a-tabitem-in-wpf-tabcontrol
+            // for why we have to do this arcane thing...
+            Dispatcher.BeginInvoke((Action)(() => TabList.SelectedIndex = 1));
+        }
+        else
+        {
+            TestStatusButton_Click(this, e);
+        }
+    }
+
+    private void ModeIndicatorBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        GoLiveModeButton_Click(this, e);
+    }
+
+    private void CountdownIndicatorBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        RunButton_Click(this, e);
+    }
+
+    private void GoLiveModeButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Toggle the Go Live Auto/Manual mode
+        Config.User.AutomaticMode = !Config.User.AutomaticMode;
+        SetGoLiveModeIndicatorDisplay();
+    }
+
+    private void PtzPreset1SetButton_Click(object sender, RoutedEventArgs e)
+    {
+        ApplySpecificPtzSetup(1);
+    }
+
+    private void PtzPreset2SetButton_Click(object sender, RoutedEventArgs e)
+    {
+        ApplySpecificPtzSetup(2);
+    }
+
+    private void PtzPreset3SetButton_Click(object sender, RoutedEventArgs e)
+    {
+        ApplySpecificPtzSetup(3);
+    }
+
+    private void PtzPreset4SetButton_Click(object sender, RoutedEventArgs e)
+    {
+        ApplySpecificPtzSetup(4);
+    }
+
+    private void PtzSetup1NameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        string newValue = PtzSetup1NameTextBox.Text.Trim();
+        SetPtzSetup1ButtonText.Text = newValue;
+        Config.User.PtzSetup1Name = newValue;
+    }
+
+    private void PtzSetup2NameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        string newValue = PtzSetup2NameTextBox.Text.Trim();
+        SetPtzSetup2ButtonText.Text = newValue;
+        Config.User.PtzSetup2Name = newValue;
+    }
+
+    private void PtzSetup3NameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        string newValue = PtzSetup3NameTextBox.Text.Trim();
+        SetPtzSetup3ButtonText.Text = newValue;
+        Config.User.PtzSetup3Name = newValue;
+    }
+
+    private void PtzSetup4NameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        string newValue = PtzSetup4NameTextBox.Text.Trim();
+        SetPtzSetup4ButtonText.Text = newValue;
+        Config.User.PtzSetup4Name = newValue;
+    }
+
+    /// <summary>
+    /// Performs a full suite of connection tests / (re) establishes all appropriate connections
+    /// </summary>
+    private async void PerformTests()
+    {
+        if (!_activelyTesting)
+        {
+            _activelyTesting = true;    // Flag to prevent re-entrancy.
+
+            // Figure out the next on-air time...
+            DetermineNextStartTime();
+
+            // Connect to the ATEM switcher...
             ConnectToAtem();
-        }
 
-        private void ChooseWallpaperButton_Click(object sender, RoutedEventArgs e)
+            // Connect to the HyperDeck recorder...
+            await ConnectToHyperDeck();
+
+            // Connect to the WebPresenter streaming deck...
+            await ConnectToWebPresenter();
+
+            // Connect to the PTZ Cameras...
+            ConnectToPtzCameras();
+
+            // When tests are complete reset the test sentinels
+            _lastTestFinish = DateTime.Now;
+            _pendingTestStart = DateTime.MaxValue;
+
+            // Show the immediate results of the tests.
+            ShowTestStatus();
+
+            // Apply the starting PTZ Setup (if and when applicable)
+            ApplyDefaultPtzSetup();
+
+            _activelyTesting = false;
+        }
+    }
+
+    private void ShowTestStatus()
+    {
+        _inCautionStatus = false;
+        // What is the test status?
+        if (_pendingTestStart == DateTime.MaxValue && _lastTestFinish == DateTime.MinValue)
         {
-            Microsoft.Win32.OpenFileDialog dlg = new()
+            // No tests have yet been performed or scheduled
+            StatusIndicatorBorder.Background = GetResource<SolidColorBrush>("Button.Disabled.Background");
+            StatusIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            StatusLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            StatusLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            StatusLightText.Text = "TBD";
+            TestStatusButton.IsEnabled = true;
+        }
+        else 
+        {
+            if (_pendingTestStart == DateTime.MaxValue)
             {
-                AddExtension = true,
-                CheckFileExists = true,
-                CheckPathExists = true,
-                Filter = "JPG|*.jpg|PNG|*.png|All Files|*.*",
-                Multiselect = false,
-                Title = "TimeToAir - Choose Wallpaper Image"
-            };
-            if ((bool)dlg.ShowDialog())
+                // No new tests are scheduled. Status is as per current indicators
+                // Work out what the status indication should be
+                bool ready = true;  // Until we find out otherwise.
+
+                // Check the ATEM connection if applicable and we're not wasting
+                // time because we're already in caution state
+                if (ready && _appSettings.UseAtemConnection)
+                {
+                    ready = ready && IsAtemConnected;
+                    if (ready)
+                    {
+                        ready &= _atem.CountdownInputReady
+                              && _atem.InputTitleCardReady
+                              && _atem.Input1Ready
+                              && _atem.Input2Ready
+                              // The Mooseware lab doesn't have an ATEM with Aux Out so ignore it
+                              // when when the feature switch is off.
+                              && (!_appSettings.UseAuxOut || _atem.AuxOutReady)
+                              && _atem.PvwOutReady
+                              && _atem.PgmOutReady;
+                    }
+                }
+
+                // Check the HyperDeck connection if applicable and we're not
+                // wasting time because we're already in a caution state
+                if (ready && _appSettings.UseHyperDeckConnection)
+                {
+                    ready &= IsHyperDeckConnected
+                          && RecordingMinutesRemaining > _appSettings.RecordingMinutesYellow;
+                }
+
+                // Check the WebPresenter connection if applicable and we're not
+                // wasting time because we're already in a caution state
+                if (ready && _appSettings.UseWebPresenterConnection)
+                {
+                    ready &= IsWebPresenterConnected;
+                }
+
+                // Check the PTZ Camera connections if applicable and we're not
+                // wasting time because we're already in a caution state
+                if (ready && _appSettings.UsePtzCameraConnections)
+                {
+                    ready &= IsCam1Connected
+                          && IsCam2Connected;
+                }
+
+                // TODO: Factor the remaining connection statuses into the ShowTestStatus() result;
+                // Basically this is just the YouTube API at this point
+
+                if (ready && _appSettings.UseScheduleApiConnection)
+                {
+                    ready &= (DateTime.Compare(_onAirTime, DateTime.Now) > 0);
+                }
+
+                // Now show the end result of the assessment...
+                if (ready)
+                {
+                    StatusIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.ReadyBackgroundBorderBrush);
+                    StatusIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.ReadyMainBrush);
+                    StatusLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+                    StatusLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+                    StatusLightText.Text = "Ready";
+                }
+                else
+                {
+                    StatusIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.CautionBackgroundBorderBrush);
+                    StatusIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.CautionMainBrush);
+                    StatusLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.CautionMainBrush);
+                    StatusLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.CautionMainBrush);
+                    StatusLightText.Text = "Caution";
+                    _inCautionStatus = true;
+                }
+                TestStatusButton.IsEnabled = true;
+            }
+            else
             {
-                WallpaperFilespecTextBox.Text = dlg.FileName;
+                // Tests are currently active or pending
+                StatusIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.PendingBackgroundBorderBrush);
+                StatusIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.PendingForegroundBrush);
+                StatusLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.PendingForegroundBrush);
+                StatusLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.PendingForegroundBrush);
+                StatusLightText.Text = "Testing";
+                TestStatusButton.IsEnabled = false;
             }
         }
+    }
 
-        /// <summary>
-        /// Determines whether the ATEM Program source is one of the media players or not
-        /// </summary>
-        /// <returns>True when the program source is something other than a media player</returns>
-        private bool IsOnAir()
+    private void SetGoLiveModeIndicatorDisplay()
+    {
+        if (Config.User.AutomaticMode == true)
         {
-            bool result = false;
+            ModeIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.ReadyBackgroundBorderBrush);
+            ModeIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.ReadyMainBrush);
+            ModeLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+            ModeLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+            ModeLightText.Text = "Auto";
+        }
+        else
+        {
+            ModeIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.ManualModeBackgroundBorderBrush);
+            ModeIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.ManualModeBorderBrush);
+            ModeLightCaptionText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.ManualModeMainBrush);
+            ModeLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.ManualModeMainBrush);
+            ModeLightText.Text = "Manual";
+        }
+        _countdownViewer.SetManualModeIndicator(!Config.User.AutomaticMode);
+        GoLiveModeButton.IsEnabled = true;
+    }
 
-            if (IsAtemConnected && _me0 != null)
+    /// <summary>
+    /// Sets the visual properties of the program audio indicator
+    /// </summary>
+    internal void SetAudioStatusDisplay()
+    {
+        if (_appSettings.UseAtemConnection && IsAtemConnected)
+        {
+            double currentPgmGain = _atem.ProgramGain;
+
+            // Is the volume more or less full?
+            if (Math.Abs(currentPgmGain - _appSettings.VolumeFullDb) < 1.0
+                || currentPgmGain > _appSettings.VolumeFullDb)
             {
-                _me0.GetProgramInput(out long currentPgmOut);
-                if (!(currentPgmOut > 0 &&
-                   (( currentPgmOut == _inputMp1Id && _inputMp1Id > 0)
-                   || (currentPgmOut == _inputMp2Id && _inputMp2Id > 0))))
+                SoundIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.ReadyBackgroundBorderBrush);
+                SoundIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.ReadyMainBrush);
+                SoundLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+                SoundLightText.Text = "Full";
+            }
+            // Is the volume more or less off?
+            else if (Math.Abs(currentPgmGain - _appSettings.VolumeOffDb) < 1.0
+                || currentPgmGain < _appSettings.VolumeOffDb)
+            {
+                SoundIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.MuteModeBackgroundBorderBrush);
+                SoundIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.MuteModeBorderBrush);
+                SoundLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.MuteModeMainBrush);
+                SoundLightText.Text = "Mute";
+            }
+            else
+            {
+                // The volume is in transition
+                SoundIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.PendingBackgroundBorderBrush);
+                SoundIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.PendingForegroundBrush);
+                SoundLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.PendingForegroundBrush);
+                SoundLightText.Text = currentPgmGain.ToString("0") + "dB";
+            }
+        }
+        else
+        {
+            SoundIndicatorBorder.Background = GetResource<SolidColorBrush>("Button.Disabled.Background");
+            SoundIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            SoundLightText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
+            SoundLightText.Text = "Mute";
+        }
+    }
+
+    /// <summary>
+    /// Gets an application WPF resource at runtime using it's key
+    /// Useful for getting brushes from control templates, etc.
+    /// </summary>
+    /// <typeparam name="T">The type of resource to be retrieved</typeparam>
+    /// <param name="resourceName">The key of the resource to be found</param>
+    /// <returns></returns>
+    private static T GetResource<T>(string resourceName) where T : class
+    {
+        return Application.Current.TryFindResource(resourceName) as T;
+    }
+
+    private void PtzSetupPmDefault_Checked(object sender, RoutedEventArgs e)
+    {
+        if (e.Source is RadioButton option)
+        {
+            string selectedOptionName = option.Name;
+            switch (selectedOptionName)
+            {
+                case "PtzSetup1PmDefault":
+                    Config.User.PtzDefaultPM = 1;
+                    break;
+                case "PtzSetup2PmDefault":
+                    Config.User.PtzDefaultPM = 2;
+                    break;
+                case "PtzSetup3PmDefault":
+                    Config.User.PtzDefaultPM = 3;
+                    break;
+                case "PtzSetup4PmDefault":
+                    Config.User.PtzDefaultPM = 4;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private void PtzSetupAmDefault_Checked(object sender, RoutedEventArgs e)
+    {
+        if (e.Source is RadioButton option)
+        {
+            string selectedOptionName = option.Name;
+            switch (selectedOptionName)
+            {
+                case "PtzSetup1AmDefault":
+                    Config.User.PtzDefaultAM = 1;
+                    break;
+                case "PtzSetup2AmDefault":
+                    Config.User.PtzDefaultAM = 2;
+                    break;
+                case "PtzSetup3AmDefault":
+                    Config.User.PtzDefaultAM = 3;
+                    break;
+                case "PtzSetup4AmDefault":
+                    Config.User.PtzDefaultAM = 4;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private void SoundIndicatorBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_appSettings.UseAtemConnection && IsAtemConnected && _atem is not null)
+        {
+            // Toggle the volume between on and off
+            double atemGain = _atem.ProgramGain;
+            if (atemGain < _appSettings.VolumeOffDb
+                || Math.Abs(atemGain - _appSettings.VolumeOffDb) < 1)
+            {
+                _atem.ProgramGain = _appSettings.VolumeFullDb;
+            }
+            else
+            {
+                _atem.ProgramGain = _appSettings.VolumeOffDb;
+            }
+            SetAudioStatusDisplay();
+        }
+
+    }
+
+    private void ApplyDefaultPtzSetup()
+    {
+        if (_ptzSetupApplied) return;
+
+        if (_appSettings.UseAtemConnection 
+            && IsAtemConnected
+            )
+        {
+            _atem.SendTitleCardToProgram();
+            _atem.ProgramGain = _appSettings.VolumeOffDb;
+        }
+
+        if (_appSettings.UsePtzCameraConnections
+         && IsCam1Connected && IsCam2Connected)
+        {
+            PtzPreset1SetButton.IsEnabled = true;
+            PtzPreset2SetButton.IsEnabled = true;
+            PtzPreset3SetButton.IsEnabled = true;
+            PtzPreset4SetButton.IsEnabled = true;
+
+            SetPtzSetup1ButtonText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+            SetPtzSetup2ButtonText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+            SetPtzSetup3ButtonText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+            SetPtzSetup4ButtonText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+
+            PtzPresetCamera1Label.Foreground = AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
+            PtzPresetCamera2Label.Foreground = AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
+            PtzPresetCamera1Preset.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+            PtzPresetCamera2Preset.Foreground = AppResources.DefinedColour(AppResources.StaticResource.BrightForegroundBrush);
+            
+            int setupNumber;
+            // Apply the default setup according to the time of day of the stream start date/time.
+            if (_onAirTime.Hour <= 12)
+            {
+                // Use the AM default
+                setupNumber = Config.User.PtzDefaultAM;
+            }
+            else
+            {
+                // Use the PM default
+                setupNumber = Config.User.PtzDefaultPM;
+            }
+            ApplySpecificPtzSetup(setupNumber);
+        }
+
+        _ptzSetupApplied = true;
+    }
+
+    private void ApplySpecificPtzSetup(int setupNumber)
+    {
+        int cam1Preset = 0;
+        int cam2Preset = 0;
+        int previewCamera = 0;
+        // Get the PTZ presets for the selected setup
+        switch (setupNumber)
+        {
+            case 1:
+                cam1Preset = Config.User.PtzSetup1Cam1;
+                cam2Preset = Config.User.PtzSetup1Cam2;
+                if ((bool)PtzSetup1Cam1.IsChecked)
                 {
-                    result = true;
+                    previewCamera = 1;
+                }
+                else if ((bool)PtzSetup1Cam2.IsChecked)
+                {
+                    previewCamera = 2;
+                }
+                break;
+            case 2:
+                cam1Preset = Config.User.PtzSetup2Cam1;
+                cam2Preset = Config.User.PtzSetup2Cam2;
+                if ((bool)PtzSetup2Cam1.IsChecked)
+                {
+                    previewCamera = 1;
+                }
+                else if ((bool)PtzSetup2Cam2.IsChecked)
+                {
+                    previewCamera = 2;
+                }
+                break;
+            case 3:
+                cam1Preset = Config.User.PtzSetup3Cam1;
+                cam2Preset = Config.User.PtzSetup3Cam2;
+                if ((bool)PtzSetup3Cam1.IsChecked)
+                {
+                    previewCamera = 1;
+                }
+                else if ((bool)PtzSetup3Cam2.IsChecked)
+                {
+                    previewCamera = 2;
+                }
+                break;
+            case 4:
+                cam1Preset = Config.User.PtzSetup4Cam1;
+                cam2Preset = Config.User.PtzSetup4Cam2;
+                if ((bool)PtzSetup4Cam1.IsChecked)
+                {
+                    previewCamera = 1;
+                }
+                else if ((bool)PtzSetup4Cam2.IsChecked)
+                {
+                    previewCamera = 2;
+                }
+                break;
+            default:
+                break;
+        }
+        PtzPreset1SetButton.BorderBrush = setupNumber == 1 ?
+            AppResources.DefinedColour(AppResources.StaticResource.SelectedPresetBorderBrush)
+            : AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
+        PtzPreset2SetButton.BorderBrush = setupNumber == 2 ?
+            AppResources.DefinedColour(AppResources.StaticResource.SelectedPresetBorderBrush)
+            : AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
+        PtzPreset3SetButton.BorderBrush = setupNumber == 3 ?
+            AppResources.DefinedColour(AppResources.StaticResource.SelectedPresetBorderBrush)
+            : AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
+        PtzPreset4SetButton.BorderBrush = setupNumber == 4 ?
+            AppResources.DefinedColour(AppResources.StaticResource.SelectedPresetBorderBrush)
+            : AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
+        // Apply the settings...
+        PtzCameraController ptzCam;
+        if (IsCam1Connected)
+        {
+            ptzCam = new(Config.User.Camera1IpAddress);
+            ptzCam.RecallPreset(cam1Preset);
+            ptzCam = null;
+            PtzPresetCamera1Preset.Text = "Preset " + cam1Preset.ToString();
+        }
+        if (IsCam1Connected)
+        {
+            ptzCam = new(Config.User.Camera2IpAddress);
+            ptzCam.RecallPreset(cam2Preset);
+            ptzCam = null;
+            PtzPresetCamera2Preset.Text = "Preset " + cam2Preset.ToString();
+        }
+        if (_appSettings.UseAtemConnection)
+        {
+            if (IsAtemConnected && _atem is not null)
+            {
+                if (previewCamera == 1)
+                {
+                    _atem.PreviewCamera1();
+                    _secondaryCamera = 2;
+                } else if (previewCamera == 2)
+                {
+                    _atem.PreviewCamera2();
+                    _secondaryCamera = 1;
                 }
             }
-
-            return result;
         }
+    }
 
-        private void RestoreWindowLocationCheckbox_Checked(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Do any automatic actions that are called for based on the current clock and configuration
+    /// </summary>
+    private void ConsiderAutomaticActions()
+    {
+        DateTime now = DateTime.Now;
+
+        // Do automatic countdown actions if we're in auto mode
+        if (Config.User.AutomaticMode)
         {
+            if (now < _streamStartTime && !_startedStreaming)
+            {
+                // Time to start streaming
+                if (_appSettings.UseWebPresenterConnection
+                    && IsWebPresenterConnected
+                    && _webPresenter is not null)
+                {
+                    _webPresenter.StartLivestream().Wait();
+                }
+                _startedStreaming = true;
+            }
 
+            if (now < _startRecordingTime && !_startedRecording)
+            {
+                // Time to start recording
+                if (_appSettings.UseHyperDeckConnection
+                    && IsHyperDeckConnected
+                    && _hyperDeck is not null)
+                {
+                    // Create a clip title based on the user-supplied template...
+                    string clipTitle = Config.User.LocalRecordingName;
+                    if (string.IsNullOrEmpty(clipTitle))
+                    {
+                        clipTitle = "SolelLiveStream_" + _onAirTime.ToString("yyyy-MM-dd_HHmm");
+                    }
+                    else
+                    {
+                        // Replace any tokens in the string
+                        if (clipTitle.Contains("[title]"))
+                        {
+                            string fullTitle = _nextEventTitle;
+                            if (!string.IsNullOrEmpty(_nextEventSubtitle))
+                            {
+                                fullTitle += "-" + _nextEventSubtitle;
+                            }
+                            clipTitle = clipTitle.Replace("[title]", fullTitle);
+                        }
+                        if (clipTitle.Contains("[yyyymmdd]"))
+                        {
+                            clipTitle = clipTitle.Replace("[yyyymmdd]", _onAirTime.ToString("yyyy-MM-dd"));
+                        }
+                        if (clipTitle.Contains("[hhmm]"))
+                        {
+                            clipTitle = clipTitle.Replace("[hhmm]", _onAirTime.ToString("HHmm"));
+                        }
+                    }
+                    _hyperDeck.StartRecording(clipTitle);
+                }
+                _startedRecording = true;
+            }
+
+            if (now >= _onAirTime && !_goneOnAir)
+            {
+                // TODO: (TESTING RQD!) Time to go on air automatically
+
+                // Fade the audio up to full volume
+                _atem.FadeProgramAudio(_appSettings.VolumeFullDb, 2.0, this);
+
+                // Perform an AUTO transition
+                _atem.PerformAutoTransition();
+
+                _goneOnAir = true;
+            }
+
+            if (now >= _secondaryCameraPreviewTime && !_previewedSecondaryCamera)
+            {
+                // Time to select the secondary camera
+                if (_appSettings.UseAtemConnection
+                    && IsAtemConnected
+                    && _atem is not null)
+                {
+                    if (_secondaryCamera == 1)
+                    {
+                        _atem.PreviewCamera1();
+                    }
+                    else if (_secondaryCamera == 2)
+                    {
+                        _atem.PreviewCamera2();
+                    }
+                }
+            }
         }
 
-        private void RestoreWindowLocationCheckbox_Unchecked(object sender, RoutedEventArgs e)
+        // Do the auto shutdown(if user config calls for it)
+        if (Config.User.ShutDownAfterGoLive)
         {
-
+            if (now >= _autoShutDownTime)
+            {
+                this.Close();
+            }
         }
+    }
 
-        private void SuppressOnAirNotificationCheckbox_Checked(object sender, RoutedEventArgs e)
+    private void AutoShutdownCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        Config.User.ShutDownAfterGoLive = true;
+        CalculateAutomaticShutdownTime();
+    }
+
+    private void AutoShutdownCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        Config.User.ShutDownAfterGoLive = false;
+        CalculateAutomaticShutdownTime();
+    }
+
+    private void CalculateAutomaticShutdownTime()
+    {
+        if (Config.User.ShutDownAfterGoLive && _onAirTime > DateTime.Now)
         {
-            SetOnAirDisplay();
+            _autoShutDownTime = _onAirTime.AddSeconds(_appSettings.AutoShutdownTimeout);
         }
-
-        private void SuppressOnAirNotificationCheckbox_Unchecked(object sender, RoutedEventArgs e)
+        else
         {
-            SetOnAirDisplay();
+            _autoShutDownTime = DateTime.MaxValue;
         }
+    }
+
+    private void RecordingFileNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        Config.User.LocalRecordingName = RecordingFileNameTextBox.Text.Trim();
     }
 }
 

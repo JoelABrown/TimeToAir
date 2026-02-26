@@ -5,11 +5,31 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Mooseware.TimeToAir"
         mc:Ignorable="d"
-        Title="CountdownViewer" Height="450" Width="800"
+        Title="CountdownViewer"
+        Height="450"
+        Width="800"
         Closing="Window_Closing"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded"
+        Icon="/Resources/TimeToAirIcon.png">
     <Grid Background="#ff88aa99">
-        <Image x:Name="WallpaperImage" />
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Image x:Name="WallpaperImage"
+               Grid.ColumnSpan="3" />
+
+        <Ellipse x:Name="ManualModeEllipse"
+                 Height="64"
+                 Width="64"
+                 Visibility="Visible"
+                 Fill="{StaticResource ManualModeBorderBrush}"
+                 VerticalAlignment="Bottom"
+                 HorizontalAlignment="Right"
+                 Margin="0,0,10,64"
+                 Grid.Column="1" />
+
         <Border x:Name="CountdownBorder"
                 BorderThickness="0"
                 Background="#99222222"
@@ -18,7 +38,8 @@
                 VerticalAlignment="Bottom"
                 HorizontalAlignment="Right"
                 Height="auto"
-                Visibility="Visible">
+                Visibility="Visible"
+                Grid.Column="2">
             <TextBlock x:Name="CountdownTime"
                        Text="00:00:00"
                        TextAlignment="Center"
@@ -31,7 +52,7 @@
                        Visibility="Visible">
             </TextBlock>
         </Border>
-        
+
         <Border x:Name="OnAirBorder"
                 BorderThickness="6"
                 BorderBrush="#FFFF0000"

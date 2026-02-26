@@ -1,9 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31105.61
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36221.1 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeToAir", "TimeToAir\TimeToAir.csproj", "{8AC39DC3-5FC8-4AB8-B763-008C6D4D3A28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtemApi", "AtemApi\AtemApi.csproj", "{E9F109F0-A16A-D052-3386-6BBBC15C0397}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperdeckApi", "HyperdeckApi\HyperdeckApi.csproj", "{5DB15DB2-C3B1-933C-879F-34821AFB9725}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebPresenterApi", "WebPresenterApi\WebPresenterApi.csproj", "{48E466D5-4FAD-6417-2D9F-778FCD87F5D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PtzOpticsCameraController", "PtzOpticsCameraController\PtzOpticsCameraController.csproj", "{6C35A9CA-7F24-9F91-B1C2-36F11B68D9A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +23,22 @@ Global
 		{8AC39DC3-5FC8-4AB8-B763-008C6D4D3A28}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AC39DC3-5FC8-4AB8-B763-008C6D4D3A28}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AC39DC3-5FC8-4AB8-B763-008C6D4D3A28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9F109F0-A16A-D052-3386-6BBBC15C0397}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9F109F0-A16A-D052-3386-6BBBC15C0397}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9F109F0-A16A-D052-3386-6BBBC15C0397}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9F109F0-A16A-D052-3386-6BBBC15C0397}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5DB15DB2-C3B1-933C-879F-34821AFB9725}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5DB15DB2-C3B1-933C-879F-34821AFB9725}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5DB15DB2-C3B1-933C-879F-34821AFB9725}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5DB15DB2-C3B1-933C-879F-34821AFB9725}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48E466D5-4FAD-6417-2D9F-778FCD87F5D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48E466D5-4FAD-6417-2D9F-778FCD87F5D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48E466D5-4FAD-6417-2D9F-778FCD87F5D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48E466D5-4FAD-6417-2D9F-778FCD87F5D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C35A9CA-7F24-9F91-B1C2-36F11B68D9A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C35A9CA-7F24-9F91-B1C2-36F11B68D9A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C35A9CA-7F24-9F91-B1C2-36F11B68D9A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C35A9CA-7F24-9F91-B1C2-36F11B68D9A5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

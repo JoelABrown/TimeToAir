@@ -2,29 +2,53 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <TargetFramework>net8.0-windows8.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Mooseware.TimeToAir</RootNamespace>
-    <ApplicationIcon>Graphicloads-100-Flat-Clock.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\TimeToAirIcon.ico</ApplicationIcon>
     <Authors>Joel Brown</Authors>
     <Company>Mooseware Limited</Company>
-    <PackageIcon>Graphicloads-100-Flat-Clock.ico</PackageIcon>
-    <Description>Live stream countdown timer with ATEM auxiliary output control.</Description>
-    <Copyright>Copyright 2025 Mooseware Limited</Copyright>
-    <Version>1.2.0</Version>
+    <PackageIcon>TimeToAirIcon.ico</PackageIcon>
+    <Description>Live stream countdown timer with ATEM, camera, HyperDeck and WebPresenter remote control.</Description>
+    <Copyright>Copyright 2021-2026 Mooseware Limited</Copyright>
+    <Version>2.0.0</Version>
+    <Title>TimeToAir</Title>
+    <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <COMReference Include="BMDSwitcherAPI">
-      <WrapperTool>tlbimp</WrapperTool>
-      <VersionMinor>0</VersionMinor>
-      <VersionMajor>1</VersionMajor>
-      <Guid>8a92b919-156c-4d61-94ef-03f9be4004b0</Guid>
-      <Lcid>0</Lcid>
-      <Isolated>false</Isolated>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
-    </COMReference>
+    <Compile Remove="SwitcherPanelCSharp\**" />
+    <EmbeddedResource Remove="SwitcherPanelCSharp\**" />
+    <None Remove="SwitcherPanelCSharp\**" />
+    <Page Remove="SwitcherPanelCSharp\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="LocalConfiguration.cs" />
+    <Compile Remove="SettingsManager.cs" />
+    <Compile Remove="SwitcherMonitor.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Graphicloads-100-Flat-Clock.ico" />
+    <None Remove="Resources\Refresh-Button-Icon.png" />
+    <None Remove="Resources\TimeToAirIcon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <DependentUpon>appsettings.json</DependentUpon>
+    </Content>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.Production.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <DependentUpon>appsettings.json</DependentUpon>
+    </Content>
+    <Content Include="Resources\TimeToAirIcon.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,10 +64,34 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Update="Resources\TimeToAirIcon.ico">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="Resources\Graphicloads-100-Flat-Clock.ico">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AtemApi\AtemApi.csproj" />
+    <ProjectReference Include="..\HyperdeckApi\HyperdeckApi.csproj" />
+    <ProjectReference Include="..\PtzOpticsCameraController\PtzOpticsCameraController.csproj" />
+    <ProjectReference Include="..\WebPresenterApi\WebPresenterApi.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Refresh-Button-Icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\TimeToAirIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
 </Project>

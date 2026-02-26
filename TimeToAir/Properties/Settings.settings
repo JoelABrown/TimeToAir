@@ -2,56 +2,149 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Mooseware.TimeToAir.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="AtemIpAddress" Type="System.String" Scope="Application">
+    <Setting Name="AtemIpAddress" Type="System.String" Scope="User">
       <Value Profile="(Default)">192.168.0.240</Value>
     </Setting>
-    <Setting Name="InputMP1Name" Type="System.String" Scope="Application">
+    <Setting Name="InputTitleCardName" Type="System.String" Scope="User">
       <Value Profile="(Default)">MP1</Value>
     </Setting>
-    <Setting Name="InputMP2Name" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">MP2</Value>
-    </Setting>
-    <Setting Name="InputCountdownName" Type="System.String" Scope="Application">
+    <Setting Name="InputCountdownName" Type="System.String" Scope="User">
       <Value Profile="(Default)">COL1</Value>
     </Setting>
-    <Setting Name="WallpaperFilespec" Type="System.String" Scope="Application">
-      <Value Profile="(Default)" />
+    <Setting Name="WallpaperFilespec" Type="System.String" Scope="User">
+      <Value Profile="(Default)">T:\Solel\Livestream\SolelTV_Wallpapers\SolelTV_TitleCard_Pre-Service.png</Value>
     </Setting>
-    <Setting Name="XPosition" Type="System.Int32" Scope="Application">
+    <Setting Name="XPosition" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">10</Value>
     </Setting>
-    <Setting Name="YPosition" Type="System.Int32" Scope="Application">
+    <Setting Name="YPosition" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">10</Value>
     </Setting>
-    <Setting Name="TurnGreen" Type="System.String" Scope="Application">
+    <Setting Name="TurnGreen" Type="System.String" Scope="User">
       <Value Profile="(Default)">02:00</Value>
     </Setting>
-    <Setting Name="TurnYellow" Type="System.String" Scope="Application">
+    <Setting Name="TurnYellow" Type="System.String" Scope="User">
       <Value Profile="(Default)">00:30</Value>
     </Setting>
-    <Setting Name="EveningStart" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">20:00</Value>
-    </Setting>
-    <Setting Name="MorningStart" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">10:00</Value>
-    </Setting>
-    <Setting Name="LastCustomStart" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">19:00</Value>
-    </Setting>
-    <Setting Name="FontSize" Type="System.Int32" Scope="Application">
+    <Setting Name="FontSize" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">64</Value>
     </Setting>
-    <Setting Name="WindowLocation" Type="System.Drawing.Point" Scope="Application">
+    <Setting Name="WindowLocation" Type="System.Drawing.Point" Scope="User">
       <Value Profile="(Default)">0, 0</Value>
     </Setting>
-    <Setting Name="WindowSize" Type="System.Drawing.Size" Scope="Application">
+    <Setting Name="WindowSize" Type="System.Drawing.Size" Scope="User">
       <Value Profile="(Default)">0, 0</Value>
     </Setting>
-    <Setting Name="RestoreWindowLocation" Type="System.Boolean" Scope="Application">
+    <Setting Name="RestoreWindowLocation" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="FullScreenViewer" Type="System.Boolean" Scope="Application">
+    <Setting Name="FullScreenViewer" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="InputCam1Name" Type="System.String" Scope="User">
+      <Value Profile="(Default)">CAM1</Value>
+    </Setting>
+    <Setting Name="InputCam2Name" Type="System.String" Scope="User">
+      <Value Profile="(Default)">CAM2</Value>
+    </Setting>
+    <Setting Name="SuppressOnAirNotification" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="AutomaticMode" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="CountdownShown" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="PtzDefaultAM" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">3</Value>
+    </Setting>
+    <Setting Name="WebPresenterIpAddress" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.1.86</Value>
+    </Setting>
+    <Setting Name="HyperDeckIpAddress" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.1.85</Value>
+    </Setting>
+    <Setting Name="Camera1IpAddress" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.1.111</Value>
+    </Setting>
+    <Setting Name="Camera2IpAddress" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.1.222</Value>
+    </Setting>
+    <Setting Name="StartStreaming" Type="System.String" Scope="User">
+      <Value Profile="(Default)">01:00</Value>
+    </Setting>
+    <Setting Name="StartRecording" Type="System.String" Scope="User">
+      <Value Profile="(Default)">00:10</Value>
+    </Setting>
+    <Setting Name="StreamDescriptionShabbatPM" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Join us as we welcome</Value>
+    </Setting>
+    <Setting Name="StreamDescriptionShabbatAM" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Join us as we celebrate</Value>
+    </Setting>
+    <Setting Name="StreamDescriptionFestivalPM" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Join us for the start of</Value>
+    </Setting>
+    <Setting Name="StreamDescriptionFestivalAM" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Join us for the festival of</Value>
+    </Setting>
+    <Setting Name="LocalRecordingName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Solel_[title]_[yyyy-mm-dd]_[hh:mm]_</Value>
+    </Setting>
+    <Setting Name="PtzSetup1Name" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Evening Regular</Value>
+    </Setting>
+    <Setting Name="PtzSetup1Preview" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="PtzSetup1Cam1" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="PtzSetup1Cam2" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">6</Value>
+    </Setting>
+    <Setting Name="PtzSetup2Name" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Evening Wide</Value>
+    </Setting>
+    <Setting Name="PtzSetup2Preview" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">2</Value>
+    </Setting>
+    <Setting Name="PtzSetup2Cam1" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="PtzSetup2Cam2" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">3</Value>
+    </Setting>
+    <Setting Name="PtzSetup3Name" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Morning Regular</Value>
+    </Setting>
+    <Setting Name="PtzSetup3Preview" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="PtzSetup3Cam1" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="PtzSetup3Cam2" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">3</Value>
+    </Setting>
+    <Setting Name="PtzSetup4Name" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Morning Wide</Value>
+    </Setting>
+    <Setting Name="PtzSetup4Preview" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">2</Value>
+    </Setting>
+    <Setting Name="PtzSetup4Cam1" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="PtzSetup4Cam2" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="ShutDownAfterGoLive" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="PtzDefaultPM" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
     </Setting>
   </Settings>
 </SettingsFile>

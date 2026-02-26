@@ -87,19 +87,36 @@ namespace Mooseware.TimeToAir
         /// <param name="tMinus">Time remaining (negative value is post service start)</param>
         public void SetCountdownTime(TimeSpan tMinus)
         {
-            if (tMinus.TotalSeconds >= 36000)
+            if (tMinus.TotalHours > 100)
+            {
+                CountdownTime.Text = ((int)tMinus.TotalHours).ToString() + "+ hrs";
+            }
+            else if (tMinus.TotalHours >= 10)
+            {
+                CountdownTime.Text = (tMinus.TotalHours >= 10 ? (((int)tMinus.TotalHours).ToString() + ":") : string.Empty)
+                                      + tMinus.ToString("mm\\:ss");
+            }
+            else if (tMinus.TotalHours < 10 && tMinus.TotalHours >= 1)
             {
                 CountdownTime.Text = tMinus.ToString("hh\\:mm\\:ss");
             }
-            else if (tMinus.TotalSeconds >= 3600)
+            else if (tMinus.TotalHours < 10 && tMinus.TotalHours >= 1)
             {
                 CountdownTime.Text = tMinus.ToString("h\\:mm\\:ss");
             }
+            ////if (tMinus.TotalSeconds >= 36000)
+            ////{
+            ////    CountdownTime.Text = tMinus.ToString("hh\\:mm\\:ss");
+            ////}
+            ////else if (tMinus.TotalSeconds >= 3600)
+            ////{
+            ////    CountdownTime.Text = tMinus.ToString("h\\:mm\\:ss");
+            ////}
             else if (tMinus.TotalSeconds >= 600)
             {
                 CountdownTime.Text = tMinus.ToString("mm\\:ss");
             }
-            else 
+            else
             {
                 CountdownTime.Text = tMinus.ToString("m\\:ss");
             }
@@ -115,6 +132,11 @@ namespace Mooseware.TimeToAir
             CountdownTime.Margin = new Thickness((fontSize * 0.375), 0, (fontSize * 0.375), (fontSize / 8.0));
             OnAirLabel.FontSize = fontSize * 0.75;  // ON AIR box should be roughly the same size as the countdown timer
             OnAirLabel.Margin = new Thickness((OnAirLabel.FontSize * 0.375), (OnAirLabel.FontSize / 6.0), (OnAirLabel.FontSize / 2.0), (OnAirLabel.FontSize / 3.0));
+            ManualModeEllipse.Width = fontSize;
+            ManualModeEllipse.Height = fontSize;
+            Thickness manualModeMargin = ManualModeEllipse.Margin;
+            manualModeMargin.Right = ManualModeEllipse.Width / 2;
+            ManualModeEllipse.Margin = manualModeMargin;
 
             SetCountdownMinWidth();
         }
@@ -145,12 +167,17 @@ namespace Mooseware.TimeToAir
             double marginY = this.ActualHeight * (double)marginPercent / 100.0;
             Thickness countDownMargin = CountdownBorder.Margin;
             Thickness onAirMargin = OnAirBorder.Margin;
+            Thickness manualModeMargin = ManualModeEllipse.Margin;
 
             countDownMargin.Bottom = marginY;
             onAirMargin.Bottom = marginY - OnAirBorder.BorderThickness.Bottom;
+            manualModeMargin.Bottom = countDownMargin.Bottom
+                                    + ((CountdownBorder.ActualHeight 
+                                        - ManualModeEllipse.ActualHeight) / 2);
 
             CountdownBorder.Margin = countDownMargin;
             OnAirBorder.Margin = onAirMargin;
+            ManualModeEllipse.Margin = manualModeMargin;
         }
 
         /// <summary>
@@ -202,6 +229,18 @@ namespace Mooseware.TimeToAir
                     break;
                 default:
                     break;
+            }
+        }
+
+        public void SetManualModeIndicator(bool manualModeOn)
+        {
+            if (manualModeOn)
+            {
+                ManualModeEllipse.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ManualModeEllipse.Visibility = Visibility.Hidden;
             }
         }
 

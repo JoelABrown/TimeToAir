@@ -54,6 +54,32 @@
                      Color="#00000000" />
     <SolidColorBrush x:Key="DisabledBackgroundBrush"
                      Color="#BB121212" />
+    <SolidColorBrush x:Key="PendingForegroundBrush"
+                     Color="#FF9999FF" />
+    <SolidColorBrush x:Key="PendingBackgroundBorderBrush"
+                     Color="#664444FF" />
+    <SolidColorBrush x:Key="CautionMainBrush"
+                     Color="#FFFF0000" />
+    <SolidColorBrush x:Key="CautionBackgroundBorderBrush"
+                     Color="#44FF0000" />
+    <SolidColorBrush x:Key="ReadyMainBrush"
+                     Color="#FF00AA00" />
+    <SolidColorBrush x:Key="ReadyBackgroundBorderBrush"
+                     Color="#3300FF00" />
+    <SolidColorBrush x:Key="MuteModeMainBrush"
+                     Color="#FF000000" />
+    <SolidColorBrush x:Key="MuteModeBorderBrush"
+                     Color="#FFFFFF00" />
+    <SolidColorBrush x:Key="MuteModeBackgroundBorderBrush"
+                     Color="#88FFFF00" />
+    <SolidColorBrush x:Key="ManualModeMainBrush"
+                     Color="#FF000000" />
+    <SolidColorBrush x:Key="ManualModeBorderBrush"
+                     Color="#FFFFAA00" />
+    <SolidColorBrush x:Key="ManualModeBackgroundBorderBrush"
+                     Color="#AAFFAA00" />
+    <SolidColorBrush x:Key="SelectedPresetBorderBrush"
+                     Color="#FFFFFF00" />
 
     <!--  Implicit Control Style Overrides  -->
     <!--<Style TargetType="{x:Type Border}" BasedOn="{StaticResource {x:Type Border}}">
