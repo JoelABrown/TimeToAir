@@ -23,6 +23,11 @@ public class AppSettings
     public double VolumeFullDb { get; set; } = 0.0;
 
     /// <summary>
+    /// The number of seconds over which to fade the volume at go on air time
+    /// </summary>
+    public double VolumeFadeDuration { get; set; } = 1.0;
+
+    /// <summary>
     /// The URL of the website where the date and time of the next livestream event is provided
     /// </summary>
     public string EventScheduleUrl { get; set; } = string.Empty;

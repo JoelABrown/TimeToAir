@@ -60,6 +60,11 @@ public partial class MainWindow : Window
     private DateTime _onAirTime = DateTime.MinValue;
 
     /// <summary>
+    /// A minimum point in time used to judge whether there has been an acutal On Air Time determined.
+    /// </summary>
+    private DateTime _dateFloor = new(2000, 1, 1);
+
+    /// <summary>
     /// The (calculated) time at which streaming should be started automatically (in auto mode)
     /// </summary>
     private DateTime _streamStartTime = DateTime.MaxValue;
@@ -98,6 +103,13 @@ public partial class MainWindow : Window
     /// Sentinel to note that the stream has gone on-air automatically (so stop trying)
     /// </summary>
     private bool _goneOnAir = false;
+
+    /// <summary>
+    /// Sentinel to note that the ATEM aux out has been restored (at go on air time)
+    /// This happens whether the app is in automatic or manual mode so it is tracked
+    /// separately from _goneOnAir
+    /// </summary>
+    private bool _restoredAtemAuxOut = false;
 
     /// <summary>
     /// Sentinel to note that the secondary camera has been sent to Preview (so stop trying)
@@ -1088,11 +1100,8 @@ public partial class MainWindow : Window
             // Set the colour according to the time remaining.
             if (DateTime.Compare(DateTime.Now, _onAirTime) == 1)
             {
-                // When the clock runs down, stop showing the countdown.
                 TimeToAirMessage.Foreground = AppResources.DefinedColour(AppResources.StaticResource.PlayingMainBrush);
                 _countdownViewer.SetCountdownColour(CountdownViewer.CountdownColour.Red);
-
-                ToggleRunningStatus(RunAction.ForceStop);
             }
             else if ((int)tMinus.TotalSeconds <= SecondsFromMinutesAndSecondsString(Config.User.TurnYellow))
             {
@@ -1787,13 +1796,28 @@ public partial class MainWindow : Window
     /// </summary>
     private void ConsiderAutomaticActions()
     {
+        // Don't do any of this if the on air time has yet to be determined
+        if (DateTime.Compare(_onAirTime, _dateFloor) < 0)
+        {
+            return;
+        }
+
         DateTime now = DateTime.Now;
+
+        // Do this regardless of automatic or manual mode...
+        if (now >= _onAirTime && !_restoredAtemAuxOut)
+        {
+            _restoredAtemAuxOut = true;
+            // Stop showing the countdown.
+            ToggleRunningStatus(RunAction.ForceStop);
+        }
 
         // Do automatic countdown actions if we're in auto mode
         if (Config.User.AutomaticMode)
         {
             if (now < _streamStartTime && !_startedStreaming)
             {
+                _startedStreaming = true;
                 // Time to start streaming
                 if (_appSettings.UseWebPresenterConnection
                     && IsWebPresenterConnected
@@ -1801,11 +1825,11 @@ public partial class MainWindow : Window
                 {
                     _webPresenter.StartLivestream().Wait();
                 }
-                _startedStreaming = true;
             }
 
             if (now < _startRecordingTime && !_startedRecording)
             {
+                _startedRecording = true;
                 // Time to start recording
                 if (_appSettings.UseHyperDeckConnection
                     && IsHyperDeckConnected
@@ -1840,24 +1864,25 @@ public partial class MainWindow : Window
                     }
                     _hyperDeck.StartRecording(clipTitle);
                 }
-                _startedRecording = true;
             }
 
             if (now >= _onAirTime && !_goneOnAir)
             {
+                _goneOnAir = true;      // Avoid re-entrancy
+
                 // TODO: (TESTING RQD!) Time to go on air automatically
 
                 // Fade the audio up to full volume
-                _atem.FadeProgramAudio(_appSettings.VolumeFullDb, 2.0, this);
+                _atem.FadeProgramAudio(_appSettings.VolumeFullDb, _appSettings.VolumeFadeDuration, this);
 
                 // Perform an AUTO transition
                 _atem.PerformAutoTransition();
-
-                _goneOnAir = true;
             }
 
             if (now >= _secondaryCameraPreviewTime && !_previewedSecondaryCamera)
             {
+                _previewedSecondaryCamera = true;
+
                 // Time to select the secondary camera
                 if (_appSettings.UseAtemConnection
                     && IsAtemConnected
