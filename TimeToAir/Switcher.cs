@@ -1,9 +1,7 @@
-﻿using Mooseware.Tachnit.AtemApi;
+﻿using Microsoft.Extensions.Logging;
+using Mooseware.Tachnit.AtemApi;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace Mooseware.TimeToAir;
@@ -102,12 +100,21 @@ public class Switcher
     /// The number of milliseconds since the start of the fade operation
     /// </summary>
     private int _audioFadeProgress = 0;
+    /// <summary>
+    /// Logging instance established at the application start
+    /// </summary>
+    private readonly ILogger<MainWindow> _logger;
 
+    /// <summary>
+    /// Reference to the MainWindow so that status indications (e.g. during fade operations) can be communicated to the UI
+    /// </summary>
     private MainWindow _audioStatusIndicatorCallback;
 
-    public Switcher(string atemIpAddress = "192.168.1.240", string input1 = "CAM1", string input2 = "CAM2",
+    public Switcher(ILogger<MainWindow> logger, string atemIpAddress = "192.168.1.240", string input1 = "CAM1", string input2 = "CAM2",
         string inputTitleCard = "MP1", string inputCountdown = "PC4")
     {
+        _logger = logger;
+
         // Connect to the _switcher, if it's where it should be...
         _atem = new(atemIpAddress);
 
@@ -186,6 +193,7 @@ public class Switcher
     /// </summary>
     public void SendTitleCardToProgram()
     {
+        _logger.LogInformation("SendTitleCardToProgram()");
         if (IsReady && InputTitleCardReady && PvwOutReady)
         {
             _atem.SetPreviewInput(InputTitleCard.InputID);
@@ -198,6 +206,7 @@ public class Switcher
     /// </summary>
     public void PreviewCamera1()
     {
+        _logger.LogInformation("PreviewCamera1()");
         if (IsReady && Input1Ready && PvwOutReady)
         {
             _atem.SetPreviewInput(Input1.InputID);
@@ -209,6 +218,7 @@ public class Switcher
     /// </summary>
     public void PreviewCamera2()
     {
+        _logger.LogInformation("PreviewCamera2()");
         if (IsReady && Input1Ready && PvwOutReady)
         {
             _atem.SetPreviewInput(Input1.InputID);
@@ -220,6 +230,7 @@ public class Switcher
     /// </summary>
     public void SendProgramToAux()
     {
+        _logger.LogInformation("SendProgramToAux()");
         if (IsReady && AuxOutReady && PgmOutReady)
         {
             _atem.SetAuxInput(PgmOutput);
@@ -231,6 +242,7 @@ public class Switcher
     /// </summary>
     public void SendCountdownToAux()
     {
+        _logger.LogInformation("SendCountdownToAux()");
         if (IsReady && AuxOutReady && CountdownInputReady)
         {
             _atem.SetAuxInput(CountdownInput);
@@ -242,6 +254,7 @@ public class Switcher
     /// </summary>
     public void PerformAutoTransition()
     {
+        _logger.LogInformation("PerformAutoTransition()");
         if (IsReady)
         {
             _atem.PerformAuto();
@@ -309,6 +322,7 @@ public class Switcher
         }
         set
         {
+            _logger.LogTrace("Set ProgramGain({value})", value);
             _atem?.SetProgramVolume(value);
         }
     }
@@ -348,6 +362,7 @@ public class Switcher
 
     public void FadeProgramAudio(double targetVolume, double fadeDuration, MainWindow audioStatusIndicatorCallback)
     {
+        _logger.LogTrace("FadeProgramAudio()");
         _audioStatusIndicatorCallback = audioStatusIndicatorCallback;
 
         if (_atem.IsReady && !_faderHeartbeat.IsEnabled)
@@ -362,6 +377,9 @@ public class Switcher
             _audioFadeProgressTarget = (int)((1000 * fadeDuration) / _faderHeartbeat.Interval.TotalMilliseconds);
 
             _audioFadeProgress = 0;
+
+            _logger.LogInformation("FadeProgramAudio(): Start={start} Finish={finish} Duration={duration}",
+                _audioFadeStart, _audioFadeFinish, fadeDuration);
 
             _faderHeartbeat.Start();
         }
@@ -385,6 +403,7 @@ public class Switcher
             // We're done fading
             _faderHeartbeat.Stop();
         }
+        _logger.LogTrace("FaderHeartbeat_Tick(): SetProgramVolume({value})", newVolume);
         _atem.SetProgramVolume(newVolume);
 
         // Update the GUI with the current volume

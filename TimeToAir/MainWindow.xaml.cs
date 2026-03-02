@@ -62,7 +62,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// A minimum point in time used to judge whether there has been an acutal On Air Time determined.
     /// </summary>
-    private DateTime _dateFloor = new(2000, 1, 1);
+    private readonly DateTime _dateFloor = new(2000, 1, 1);
 
     /// <summary>
     /// The (calculated) time at which streaming should be started automatically (in auto mode)
@@ -419,6 +419,8 @@ public partial class MainWindow : Window
     /// </summary>
     private void ConnectToAtem()
     {
+        _logger.LogTrace("ConnectToAtem()");
+
         IsAtemConnected = false;
 
         // If this is a reconnection, get rid of the old references first
@@ -429,7 +431,9 @@ public partial class MainWindow : Window
 
         if (_appSettings.UseAtemConnection)
         {
-            _atem = new(
+            _logger.LogInformation("ConnectToAtem(): Connecting to ATEM at IP={ipaddress}", Config.User.AtemIpAddress);
+
+            _atem = new(_logger,
                 atemIpAddress: Config.User.AtemIpAddress,
                 input1: Config.User.InputCam1Name,
                 input2: Config.User.InputCam2Name,
@@ -437,6 +441,14 @@ public partial class MainWindow : Window
                 inputCountdown: Config.User.InputCountdownName);
 
             IsAtemConnected = _atem.IsReady;
+
+            _logger.LogTrace("ConnectToAtem(): CountdownInputReady={status}", _atem.CountdownInputReady);
+            _logger.LogTrace("ConnectToAtem(): InputTitleCardReady={status}", _atem.InputTitleCardReady);
+            _logger.LogTrace("ConnectToAtem(): Input1Ready={status}", _atem.Input1Ready);
+            _logger.LogTrace("ConnectToAtem(): Input2Ready={status}", _atem.Input2Ready);
+            _logger.LogTrace("ConnectToAtem(): AuxOutReady={status}", _atem.AuxOutReady);
+            _logger.LogTrace("ConnectToAtem(): PvwOutReady={status}", _atem.PvwOutReady);
+            _logger.LogTrace("ConnectToAtem(): PgmOutReady={status}", _atem.PgmOutReady);
 
             // Show the status of various ATEM connections and input discoveries...
             CountdownInputStatusLed.SelectedColour = _atem.CountdownInputReady ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
@@ -464,6 +476,8 @@ public partial class MainWindow : Window
                 AuxOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
                 PvwOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
                 PgmOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+
+                _logger.LogTrace("ConnectToAtem(): No connection. Input status is indeterminate.");
             }
             AtemApiStatusLed.IsOn = true;   // Not is connected. Always on once we know one way or the other.
         }
@@ -479,6 +493,8 @@ public partial class MainWindow : Window
             AuxOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
             PvwOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
             PgmOutStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
+
+            _logger.LogTrace("ConnectToAtem(): ATEM connection is disabled by application settings");
         }
 
         CountdownInputStatusLed.IsOn = IsAtemConnected;
@@ -491,10 +507,14 @@ public partial class MainWindow : Window
 
         StyleRunButton();
         SetOnAirDisplay();
+
+        _logger.LogInformation("ConnectToAtem(): IsAtemConnected={status}", IsAtemConnected);
     }
 
     private async Task ConnectToHyperDeck()
     {
+        _logger.LogTrace("ConnectToHyperDeck()");
+        
         IsHyperDeckConnected = false;
 
         // If this is a reconnection, get rid of the old reference first.
@@ -505,6 +525,8 @@ public partial class MainWindow : Window
 
         if (_appSettings.UseHyperDeckConnection)
         {
+            _logger.LogInformation("ConnectToHyperDeck(): Connecting to HyperDeck at IP={ipaddress}", Config.User.HyperDeckIpAddress);
+
             _hyperDeck = new(Config.User.HyperDeckIpAddress);
             try
             {
@@ -556,6 +578,12 @@ public partial class MainWindow : Window
                             break;
                     }
                     SdCard2SpaceStatusLed.IsOn = true;
+
+                    _logger.LogTrace("ConnectToHyperDeck(): Connected");
+                    _logger.LogTrace("ConnectToHyperDeck(): RecordingMinutesRemaining={status}", RecordingMinutesRemaining);
+                    _logger.LogTrace("ConnectToHyperDeck(): Slot1Status={status}", _hyperDeck.Slot1Status);
+                    _logger.LogTrace("ConnectToHyperDeck(): Slot2Status={status}", _hyperDeck.Slot2Status);
+
                 }
                 else
                 {
@@ -573,12 +601,21 @@ public partial class MainWindow : Window
             catch (Exception)
             {
                 // There is no HyperDeck connection available
+                _logger.LogTrace("ConnectToHyperDeck(): Error trapped attempting to connect");
             }
         }
+        else
+        {
+            _logger.LogTrace("ConnectToHyperDeck(): HyperDeck connection is disabled by application settings");
+        }
+
+        _logger.LogInformation("ConnectToHyperDeck(): IsHyperDeckConnected={status}", IsHyperDeckConnected);
     }
 
     private async Task ConnectToWebPresenter()
     {
+        _logger.LogTrace("ConnectToWebPresenter()");
+
         IsWebPresenterConnected = false;
 
         // If this is a reconnection, get rid of the old reference first.
@@ -589,6 +626,8 @@ public partial class MainWindow : Window
 
         if (_appSettings.UseWebPresenterConnection)
         {
+            _logger.LogInformation("ConnectToWebPresenter(): Connecting to WebPresenter at IP={ipaddress}", Config.User.WebPresenterIpAddress);
+
             _webPresenter = new(Config.User.WebPresenterIpAddress, _httpClientFactory);
             try
             {
@@ -606,12 +645,20 @@ public partial class MainWindow : Window
             catch (Exception)
             {
                 // There is no WebPresenter connection available
+                _logger.LogTrace("ConnectToWebPresenter(): Error trapped attempting to connect");
             }
         }
+        else
+        {
+            _logger.LogTrace("ConnectToWebPresenter(): WebPresenter connection is disabled by application settings");
+        }
+        _logger.LogInformation("ConnectToWebPresenter(): IsWebPresenterConnected={status}", IsWebPresenterConnected);
     }
 
     private void ConnectToPtzCameras()
     {
+        _logger.LogTrace("ConnectToPtzCameras()");
+        
         IsCam1Connected = false;
         IsCam2Connected = false;
 
@@ -620,10 +667,12 @@ public partial class MainWindow : Window
         {
             try
             {
+                _logger.LogInformation("ConnectToPtzCameras(): Connecting to PTZ Camera 1 at IP={ipaddress}", Config.User.Camera1IpAddress);
                 ptzCam = new(Config.User.Camera1IpAddress);
                 IsCam1Connected = ptzCam.IsConnected;
                 ptzCam = null;
 
+                _logger.LogInformation("ConnectToPtzCameras(): Connecting to PTZ Camera 2 at IP={ipaddress}", Config.User.Camera2IpAddress);
                 ptzCam = new(Config.User.Camera2IpAddress);
                 IsCam2Connected = ptzCam.IsConnected;
                 ptzCam = null;
@@ -651,10 +700,18 @@ public partial class MainWindow : Window
             }
             Camera2ConnectionStatusLed.IsOn = true;
         }
+        else
+        {
+            _logger.LogTrace("ConnectToPtzCameras(): PTZ camera connection is disabled by application settings");
+        }
+        _logger.LogInformation("ConnectToPtzCameras(): PTZ Camera 1 IsConnected={status}", IsCam1Connected);
+        _logger.LogInformation("ConnectToPtzCameras(): PTZ Camera 2 IsConnected={status}", IsCam2Connected);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        _logger.LogInformation("MainWindow Loading");
+
         // Load the current settings and display them in the Options tab...
         ShowOptions();
         SetGoLiveModeIndicatorDisplay();
@@ -714,8 +771,9 @@ public partial class MainWindow : Window
     {
         _onAirTime = DateTime.MinValue;
         IsScheduleConnected = false;
-
         bool sourceIsApi = false;
+
+        _logger.LogTrace("DetermineNextStartTime()");
 
         if (_appSettings.ForceTestCountdownSeconds > 0)
         {
@@ -724,9 +782,12 @@ public partial class MainWindow : Window
             _onAirTime = DateTime.Now.AddSeconds(_appSettings.ForceTestCountdownSeconds);
             _nextEventTitle = "Test Event";
             _nextEventSubtitle = "Forced Start Time";
+            _logger.LogTrace("DetermineNextStartTime(): ForceTestCountdownSeconds={secs}", _appSettings.ForceTestCountdownSeconds);
         }
         else if (_appSettings.UseScheduleApiConnection)
         {
+            _logger.LogTrace("DetermineNextStartTime(): UseScheduleApiConnection=true");
+
             string streamDate = string.Empty;
             string startTime = string.Empty;
             // Get the next start time based on the schedule API
@@ -761,6 +822,8 @@ public partial class MainWindow : Window
         // If it didn't work or if we're not using the schedule API, guess morning/evening based on current clock
         if (_onAirTime < DateTime.Now)
         {
+            _logger.LogTrace("DetermineNextStartTime(): Guessing date and time based on current clock");
+
             DateTime nextEveningService = new(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 20, 0, 0);
             // Are we past this time today?
             if (DateTime.Compare(DateTime.Now, nextEveningService) > 0)
@@ -768,6 +831,8 @@ public partial class MainWindow : Window
                 // We're starting at this time tomorrow...
                 nextEveningService = nextEveningService.AddDays(1);
             }
+            _logger.LogTrace("DetermineNextStartTime(): Next default evening service at {eve}", nextEveningService);
+
             DateTime nextMorningService = new(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 0);
             // Are we past this time today?
             if (DateTime.Compare(DateTime.Now, nextMorningService) > 0)
@@ -775,6 +840,8 @@ public partial class MainWindow : Window
                 // We're starting at this time tomorrow...
                 nextMorningService = nextMorningService.AddDays(1);
             }
+            _logger.LogTrace("DetermineNextStartTime(): Next default morning service at {morn}", nextMorningService);
+
             if (DateTime.Compare(nextEveningService, nextMorningService) < 0)
             {
                 _onAirTime = nextEveningService;
@@ -789,11 +856,15 @@ public partial class MainWindow : Window
             }
             if (_appSettings.UseScheduleApiConnection)
             {
+                _logger.LogTrace("DetermineNextStartTime(): EventScheduleApiStatusLed colour=Red");
+
                 EventScheduleApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.Red;
                 EventScheduleApiStatusLed.IsOn = true;
             }
             else
             {
+                _logger.LogTrace("DetermineNextStartTime(): EventScheduleApiStatusLed colour=White");
+                
                 EventScheduleApiStatusLed.SelectedColour = LightEmittingDiode.ColourOptions.White;
                 EventScheduleApiStatusLed.IsOn = false;
             }
@@ -819,6 +890,7 @@ public partial class MainWindow : Window
             StreamEventsScheduleDetailsTextBlock.Text = "Schedule unavailable, presuming:";
         }
         StreamEventsScheduleDetailsTextBlock.Text += " " + _onAirTime.ToString("dddd d MMMM HH:mm");
+        _logger.LogInformation("DetermineNextStartTime(): Next event details={details}", StreamEventsScheduleDetailsTextBlock.Text);
 
         // Once we have an answer (even if it's a guess) the UI on the main tab should show as "settled"
         NextStreamCountdownText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
@@ -837,6 +909,10 @@ public partial class MainWindow : Window
             _startRecordingTime = DateTime.MaxValue;
             _secondaryCameraPreviewTime = DateTime.MaxValue;
         }
+        _logger.LogInformation("DetermineNextStartTime(): _onAirTime={time}", _onAirTime);
+        _logger.LogInformation("DetermineNextStartTime(): _streamStartTime={time}", _streamStartTime);
+        _logger.LogInformation("DetermineNextStartTime(): _startRecordingTime={time}", _startRecordingTime);
+        _logger.LogInformation("DetermineNextStartTime(): _secondaryCameraPreviewTime={time}", _secondaryCameraPreviewTime);
     }
 
     /// <summary>
@@ -976,6 +1052,9 @@ public partial class MainWindow : Window
         bool currentlyRunning = _appSettings.UseAtemConnection 
             && _atem is not null
             && _atem.IsCurrentlyRunning;
+
+        _logger.LogInformation("ToggleRunningStatus({action}) Currently running={current}",
+            runAction.ToString(), currentlyRunning);
 
         if (_appSettings.UseAtemConnection && _atem is not null)
         {
@@ -1150,6 +1229,8 @@ public partial class MainWindow : Window
         Config.User.Save();
 
         _countdownViewer.ShutDownViewer();
+
+        _logger.LogInformation("MainWindow closing");
     }
 
     private void FullScreenViewerCheckBox_Checked(object sender, RoutedEventArgs e)
@@ -1355,6 +1436,7 @@ public partial class MainWindow : Window
         if (!_activelyTesting)
         {
             _activelyTesting = true;    // Flag to prevent re-entrancy.
+            _logger.LogInformation("PerformTests(): starting testing");
 
             // Figure out the next on-air time...
             DetermineNextStartTime();
@@ -1492,6 +1574,7 @@ public partial class MainWindow : Window
 
     private void SetGoLiveModeIndicatorDisplay()
     {
+        _logger.LogInformation("SetGoLiveModeIndicatorDisplay(): Go live automatically={auto}", Config.User.AutomaticMode);
         if (Config.User.AutomaticMode == true)
         {
             ModeIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.ReadyBackgroundBorderBrush);
@@ -1692,6 +1775,9 @@ public partial class MainWindow : Window
         int cam1Preset = 0;
         int cam2Preset = 0;
         int previewCamera = 0;
+
+        _logger.LogInformation("ApplySpecificPtzSetup(setupNumber={parm})", setupNumber);
+
         // Get the PTZ presets for the selected setup
         switch (setupNumber)
         {
@@ -1764,14 +1850,14 @@ public partial class MainWindow : Window
         {
             ptzCam = new(Config.User.Camera1IpAddress);
             ptzCam.RecallPreset(cam1Preset);
-            ptzCam = null;
+            ptzCam.Dispose();
             PtzPresetCamera1Preset.Text = "Preset " + cam1Preset.ToString();
         }
         if (IsCam1Connected)
         {
             ptzCam = new(Config.User.Camera2IpAddress);
             ptzCam.RecallPreset(cam2Preset);
-            ptzCam = null;
+            ptzCam.Dispose();
             PtzPresetCamera2Preset.Text = "Preset " + cam2Preset.ToString();
         }
         if (_appSettings.UseAtemConnection)
@@ -1789,6 +1875,8 @@ public partial class MainWindow : Window
                 }
             }
         }
+        _logger.LogInformation("ApplySpecificPtzSetup(): Cam1 preset={cam1} Cam2 preset={cam2} preview camera: {primary} secondary camera: {secondary}", 
+            cam1Preset, cam2Preset, previewCamera, _secondaryCamera);
     }
 
     /// <summary>
@@ -1796,17 +1884,23 @@ public partial class MainWindow : Window
     /// </summary>
     private void ConsiderAutomaticActions()
     {
+        _logger.LogTrace("ConsiderAutomaticActions()");
         // Don't do any of this if the on air time has yet to be determined
         if (DateTime.Compare(_onAirTime, _dateFloor) < 0)
         {
+            _logger.LogDebug("ConsiderAutomaticActions(): _onAirTime less than _dateFloor. Exiting.");
             return;
         }
 
         DateTime now = DateTime.Now;
+        _logger.LogTrace("ConsiderAutomaticActions() _onAirTime={onAirTime} it is now={now}", _onAirTime, now);
+        _logger.LogTrace("ConsiderAutomaticActions(): Automatic mode={auto}", Config.User.AutomaticMode);
+        _logger.LogTrace("ConsiderAutomaticActions(): _restoredAtemAuxOut={flag}", _restoredAtemAuxOut);
 
         // Do this regardless of automatic or manual mode...
         if (now >= _onAirTime && !_restoredAtemAuxOut)
         {
+            _logger.LogInformation("ConsiderAutomaticActions(): Stop showing the countdown.");
             _restoredAtemAuxOut = true;
             // Stop showing the countdown.
             ToggleRunningStatus(RunAction.ForceStop);
@@ -1815,9 +1909,13 @@ public partial class MainWindow : Window
         // Do automatic countdown actions if we're in auto mode
         if (Config.User.AutomaticMode)
         {
-            if (now < _streamStartTime && !_startedStreaming)
+            _logger.LogTrace("ConsiderAutomaticActions(): Considering automatic actions");
+
+            if (now > _streamStartTime && !_startedStreaming)
             {
                 _startedStreaming = true;
+                _logger.LogInformation("ConsiderAutomaticActions(): Time to start streaming.");
+
                 // Time to start streaming
                 if (_appSettings.UseWebPresenterConnection
                     && IsWebPresenterConnected
@@ -1825,11 +1923,20 @@ public partial class MainWindow : Window
                 {
                     _webPresenter.StartLivestream().Wait();
                 }
+                else
+                {
+                    _logger.LogTrace("ConsiderAutomaticActions(): Start streaming skipped. "
+                        + "UseWebPresenterConnection={featureflag} "
+                        + "IsWebPresenterConnected={cnx}",
+                        _appSettings.UseWebPresenterConnection, IsWebPresenterConnected);
+                }
             }
 
-            if (now < _startRecordingTime && !_startedRecording)
+            if (now > _startRecordingTime && !_startedRecording)
             {
                 _startedRecording = true;
+                _logger.LogInformation("ConsiderAutomaticActions(): Time to start recording.");
+
                 // Time to start recording
                 if (_appSettings.UseHyperDeckConnection
                     && IsHyperDeckConnected
@@ -1862,26 +1969,38 @@ public partial class MainWindow : Window
                             clipTitle = clipTitle.Replace("[hhmm]", _onAirTime.ToString("HHmm"));
                         }
                     }
+                    _logger.LogInformation("ConsiderAutomaticActions(): Recording title={title}", clipTitle);
                     _hyperDeck.StartRecording(clipTitle);
+                }
+                else
+                {
+                    _logger.LogTrace("ConsiderAutomaticActions(): Start recording skipped. "
+                        + "UseHyperDeckConnection={featureflag} "
+                        + "IsHyperDeckConnected={cnx}",
+                        _appSettings.UseHyperDeckConnection, IsHyperDeckConnected);
                 }
             }
 
             if (now >= _onAirTime && !_goneOnAir)
             {
                 _goneOnAir = true;      // Avoid re-entrancy
+                _logger.LogInformation("ConsiderAutomaticActions(): Time to go ON AIR.");
 
                 // TODO: (TESTING RQD!) Time to go on air automatically
 
                 // Fade the audio up to full volume
+                _logger.LogTrace("ConsiderAutomaticActions(): fading audio up");
                 _atem.FadeProgramAudio(_appSettings.VolumeFullDb, _appSettings.VolumeFadeDuration, this);
 
                 // Perform an AUTO transition
+                _logger.LogTrace("ConsiderAutomaticActions(): performing auto transition");
                 _atem.PerformAutoTransition();
             }
 
             if (now >= _secondaryCameraPreviewTime && !_previewedSecondaryCamera)
             {
                 _previewedSecondaryCamera = true;
+                _logger.LogInformation("ConsiderAutomaticActions(): Time to select the secondary camera.");
 
                 // Time to select the secondary camera
                 if (_appSettings.UseAtemConnection
@@ -1897,14 +2016,22 @@ public partial class MainWindow : Window
                         _atem.PreviewCamera2();
                     }
                 }
+                else 
+                {
+                    _logger.LogTrace("ConsiderAutomaticActions(): Set secondary camera skipped. "
+                        + "UseAtemConnection={featureflag} "
+                        + "IsAtemConnected={cnx}",
+                        _appSettings.UseAtemConnection, IsAtemConnected);
+                }
             }
         }
 
-        // Do the auto shutdown(if user config calls for it)
+        // Do the auto shutdown (if user config calls for it)
         if (Config.User.ShutDownAfterGoLive)
         {
             if (now >= _autoShutDownTime)
             {
+                _logger.LogInformation("ConsiderAutomaticActions(): Time to shut down automatically.");
                 this.Close();
             }
         }
@@ -1924,6 +2051,7 @@ public partial class MainWindow : Window
 
     private void CalculateAutomaticShutdownTime()
     {
+        _logger.LogTrace("CalculateAutomaticShutdownTime()");
         if (Config.User.ShutDownAfterGoLive && _onAirTime > DateTime.Now)
         {
             _autoShutDownTime = _onAirTime.AddSeconds(_appSettings.AutoShutdownTimeout);
@@ -1932,6 +2060,8 @@ public partial class MainWindow : Window
         {
             _autoShutDownTime = DateTime.MaxValue;
         }
+        _logger.LogInformation("CalculateAutomaticShutdownTime(): Shut down time={time} Auto shut down={auto}", 
+            _autoShutDownTime, Config.User.ShutDownAfterGoLive);
     }
 
     private void RecordingFileNameTextBox_TextChanged(object sender, TextChangedEventArgs e)

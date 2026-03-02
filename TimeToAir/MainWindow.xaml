@@ -1342,18 +1342,30 @@
                         <TextBox x:Name="StreamDescriptionShabbatEveningTextBox"
                                  Grid.Row="1"
                                  Grid.Column="1"
+                                 AcceptsReturn="True"
+                                 TextWrapping="WrapWithOverflow"
+                                 VerticalScrollBarVisibility="Auto"
                                  Text="Join us as we ..." />
                         <TextBox x:Name="StreamDescriptionFestivalEveningTextBox"
                                  Grid.Row="1"
                                  Grid.Column="3"
+                                 AcceptsReturn="True"
+                                 TextWrapping="WrapWithOverflow"
+                                 VerticalScrollBarVisibility="Auto"
                                  Text="Join us as we ..." />
                         <TextBox x:Name="StreamDescriptionShabbatMorningTextBox"
                                  Grid.Row="3"
                                  Grid.Column="1"
+                                 AcceptsReturn="True"
+                                 TextWrapping="WrapWithOverflow"
+                                 VerticalScrollBarVisibility="Auto"
                                  Text="Join us as we ..." />
                         <TextBox x:Name="StreamDescriptionFestivalMorningTextBox"
                                  Grid.Row="3"
                                  Grid.Column="3"
+                                 AcceptsReturn="True"
+                                 TextWrapping="WrapWithOverflow"
+                                 VerticalScrollBarVisibility="Auto"
                                  Text="Join us as we ..." />
 
                     </Grid>
