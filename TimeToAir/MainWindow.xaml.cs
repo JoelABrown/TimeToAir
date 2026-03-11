@@ -913,6 +913,9 @@ public partial class MainWindow : Window
         _logger.LogInformation("DetermineNextStartTime(): _streamStartTime={time}", _streamStartTime);
         _logger.LogInformation("DetermineNextStartTime(): _startRecordingTime={time}", _startRecordingTime);
         _logger.LogInformation("DetermineNextStartTime(): _secondaryCameraPreviewTime={time}", _secondaryCameraPreviewTime);
+
+        // Any time the event start time is potentially updated, re-evaluate the auto-close time too...
+        CalculateAutomaticShutdownTime();
     }
 
     /// <summary>
@@ -1140,7 +1143,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Heartbeat_Tick(object sender, EventArgs e)
+    private async void Heartbeat_Tick(object sender, EventArgs e)
     {
         // Check to see if a connection test is pending...
         if (DateTime.Compare(DateTime.Now, _pendingTestStart) >= 0)
@@ -1206,13 +1209,19 @@ public partial class MainWindow : Window
             TimeToAirMessage.Text = "TBD";
         }
 
-        ConsiderAutomaticActions();
+         await ConsiderAutomaticActions();
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
         // If we're showing the countdown, then take that down so as not to leave things hanging...
         ToggleRunningStatus(RunAction.ForceStop);
+
+        // Don't leave the ATEM audio muted
+        if (_atem is not null && _atem.IsReady)
+        {
+            _atem.ProgramGain = _appSettings.VolumeFullDb;
+        }
 
         // Save viewer window settings before closing...
         if (RestoreWindowLocationCheckbox.IsChecked?? false == true)
@@ -1882,7 +1891,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Do any automatic actions that are called for based on the current clock and configuration
     /// </summary>
-    private void ConsiderAutomaticActions()
+    private async Task ConsiderAutomaticActions()
     {
         _logger.LogTrace("ConsiderAutomaticActions()");
         // Don't do any of this if the on air time has yet to be determined
@@ -1921,7 +1930,15 @@ public partial class MainWindow : Window
                     && IsWebPresenterConnected
                     && _webPresenter is not null)
                 {
-                    _webPresenter.StartLivestream().Wait();
+                    bool livestreamStartedOk = await _webPresenter.StartLivestream();  ////.Wait();
+                    if (livestreamStartedOk)
+                    {
+                        _logger.LogInformation("ConsiderAutomaticActions(): Start streaming successful.");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("ConsiderAutomaticActions(): FAILED to start streaming.");
+                    }
                 }
                 else
                 {
