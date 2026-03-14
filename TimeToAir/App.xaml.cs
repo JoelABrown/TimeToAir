@@ -43,6 +43,10 @@ public partial class App : System.Windows.Application
     {
         await AppHost!.StartAsync();
 
+        // Log that the app is starting
+        var logger = AppHost.Services.GetRequiredService<ILogger>();
+        logger.Information("App.xaml.cs OnStartup(): Application loading");
+
         // Launch the MainWindow
         var startupForm = AppHost.Services.GetRequiredService<MainWindow>();
         startupForm.Show();
@@ -53,6 +57,10 @@ public partial class App : System.Windows.Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
+        // Log that the app is starting
+        var logger = AppHost.Services.GetRequiredService<ILogger>();
+        logger.Information("App.xaml.cs OnExit(): Application shutting down");
+
         // Wind down the API server...
         await AppHost!.StopAsync();
         base.OnExit(e);

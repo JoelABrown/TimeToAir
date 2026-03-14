@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Net.Http;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -57,7 +58,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Date and time of the start of the next service. This is the point in time we are counting down to.
     /// </summary>
-    private DateTime _onAirTime = DateTime.MinValue;
+    private DateTime _onAirTime = DateTime.MaxValue;
 
     /// <summary>
     /// A minimum point in time used to judge whether there has been an acutal On Air Time determined.
@@ -719,6 +720,8 @@ public partial class MainWindow : Window
         // Adjust the size, position and mode of the preview window according to the settings...
         if (Config.User.RestoreWindowLocation)
         {
+            _logger.LogTrace("MainWindow.Window_Loaded(): Restoring window size and position");
+
             _countdownViewer.Top = Config.User.WindowLocation.Y;
             _countdownViewer.Left = Config.User.WindowLocation.X;
             _countdownViewer.Height = Config.User.WindowSize.Height;
@@ -750,8 +753,11 @@ public partial class MainWindow : Window
             + "  "
             + copyrightNotice;
 
+        _logger.LogDebug("Version: {version}", AppVersionTextBlock.Text);
+
         // Give the app a couple of seconds to paint and then do a full round of connection tests
         _pendingTestStart = DateTime.Now.AddSeconds(_appSettings.SecondsToWaitForTesting);
+        _logger.LogDebug("Connection tests begin at: {start}", _pendingTestStart.ToString("O"));
 
         ShowTestStatus();
 
@@ -760,6 +766,7 @@ public partial class MainWindow : Window
         ToggleRunningStatus(showHideAction);
 
         // And start minding the time...
+        _logger.LogDebug("Window_Loaded(): Stating _heartbeat Timer");
         _heartbeat.Start();
         _loaded = true;
     }
@@ -769,7 +776,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void DetermineNextStartTime()
     {
-        _onAirTime = DateTime.MinValue;
+        _onAirTime = DateTime.MaxValue;
         IsScheduleConnected = false;
         bool sourceIsApi = false;
 
@@ -820,7 +827,7 @@ public partial class MainWindow : Window
         }
 
         // If it didn't work or if we're not using the schedule API, guess morning/evening based on current clock
-        if (_onAirTime < DateTime.Now)
+        if (_onAirTime == DateTime.MaxValue)
         {
             _logger.LogTrace("DetermineNextStartTime(): Guessing date and time based on current clock");
 
@@ -897,7 +904,7 @@ public partial class MainWindow : Window
         NextStreamCountdownLabelText.Foreground = AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
     
         // Determine the other derived deadlines based on whatever has been identified thus far
-        if (_onAirTime != DateTime.MinValue)
+        if (_onAirTime != DateTime.MaxValue)
         {
             _streamStartTime = _onAirTime.AddSeconds(-1 * SecondsFromMinutesAndSecondsString(Config.User.StartStreaming));
             _startRecordingTime = _onAirTime.AddSeconds(-1 * SecondsFromMinutesAndSecondsString(Config.User.StartRecording));
@@ -923,6 +930,8 @@ public partial class MainWindow : Window
     /// </summary>
     private void ShowOptions()
     {
+        _logger.LogDebug("ShowOptions()");
+
         // Connections Tab
         AtemIpAddressTextBox.Text = Config.User.AtemIpAddress;
         CountdownInputTextBox.Text = Config.User.InputCountdownName;
@@ -1025,6 +1034,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void SetOnAirDisplay()
     {
+        _logger.LogTrace("SetOnAirDisplay()");
         if (IsOnAir() && SuppressOnAirNotificationCheckbox.IsChecked == false)
         {
             _countdownViewer.SetOnAir(true);
@@ -1052,7 +1062,7 @@ public partial class MainWindow : Window
     /// <param name="runAction">Choose whether to run, stop or toggle the state of the ATEM auxiliary output</param>
     private void ToggleRunningStatus(RunAction runAction)
     {
-        bool currentlyRunning = _appSettings.UseAtemConnection 
+        bool currentlyRunning = _appSettings.UseAtemConnection
             && _atem is not null
             && _atem.IsCurrentlyRunning;
 
@@ -1158,7 +1168,7 @@ public partial class MainWindow : Window
             SetAudioStatusDisplay();
         }
 
-        if (_onAirTime > DateTime.MinValue)
+        if (_onAirTime != DateTime.MaxValue)
         {
             // How long until the next service start?
             TimeSpan tMinus = TimeSpan.FromSeconds((_onAirTime - DateTime.Now).TotalSeconds + 1);
@@ -1214,12 +1224,15 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        _logger.LogTrace("MainWindow:Window_Closing()");
+
         // If we're showing the countdown, then take that down so as not to leave things hanging...
         ToggleRunningStatus(RunAction.ForceStop);
 
         // Don't leave the ATEM audio muted
         if (_atem is not null && _atem.IsReady)
         {
+            _logger.LogInformation("Set ATEM Program gain to full ({volume})", _appSettings.VolumeFullDb);
             _atem.ProgramGain = _appSettings.VolumeFullDb;
         }
 
@@ -1478,10 +1491,14 @@ public partial class MainWindow : Window
 
     private void ShowTestStatus()
     {
+        _logger.LogDebug("ShowTestStatus()");
+
         _inCautionStatus = false;
         // What is the test status?
         if (_pendingTestStart == DateTime.MaxValue && _lastTestFinish == DateTime.MinValue)
         {
+            _logger.LogDebug("ShowTestStatus(): No tests performed or scheduled yet");
+
             // No tests have yet been performed or scheduled
             StatusIndicatorBorder.Background = GetResource<SolidColorBrush>("Button.Disabled.Background");
             StatusIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.DisabledMainBrush);
@@ -1494,6 +1511,8 @@ public partial class MainWindow : Window
         {
             if (_pendingTestStart == DateTime.MaxValue)
             {
+                _logger.LogDebug("ShowTestStatus(): No new tests scheduled. Show most recent results");
+
                 // No new tests are scheduled. Status is as per current indicators
                 // Work out what the status indication should be
                 bool ready = true;  // Until we find out otherwise.
@@ -1540,7 +1559,7 @@ public partial class MainWindow : Window
                           && IsCam2Connected;
                 }
 
-                // TODO: Factor the remaining connection statuses into the ShowTestStatus() result;
+                // TODO: Factor the REMAINING connection statuses into the ShowTestStatus() result;
                 // Basically this is just the YouTube API at this point
 
                 if (ready && _appSettings.UseScheduleApiConnection)
@@ -1570,6 +1589,8 @@ public partial class MainWindow : Window
             }
             else
             {
+                _logger.LogDebug("ShowTestStatus(): Tests active or pending");
+
                 // Tests are currently active or pending
                 StatusIndicatorBorder.Background = AppResources.DefinedColour(AppResources.StaticResource.PendingBackgroundBorderBrush);
                 StatusIndicatorBorder.BorderBrush = AppResources.DefinedColour(AppResources.StaticResource.PendingForegroundBrush);
@@ -1895,9 +1916,14 @@ public partial class MainWindow : Window
     {
         _logger.LogTrace("ConsiderAutomaticActions()");
         // Don't do any of this if the on air time has yet to be determined
-        if (DateTime.Compare(_onAirTime, _dateFloor) < 0)
+        ////if (DateTime.Compare(_onAirTime, _dateFloor) < 0)
+        ////{
+        ////    _logger.LogDebug("ConsiderAutomaticActions(): _onAirTime less than _dateFloor. Exiting.");
+        ////    return;
+        ////}
+        if (_onAirTime == DateTime.MaxValue)
         {
-            _logger.LogDebug("ConsiderAutomaticActions(): _onAirTime less than _dateFloor. Exiting.");
+            _logger.LogDebug("ConsiderAutomaticActions(): _onAirTime has not been determined. Exiting.");
             return;
         }
 
@@ -1985,6 +2011,8 @@ public partial class MainWindow : Window
                         {
                             clipTitle = clipTitle.Replace("[hhmm]", _onAirTime.ToString("HHmm"));
                         }
+                        // Normalize any non-standard characters out of the filename
+                        clipTitle = Regex.Replace(clipTitle, """[{;:'"()~`!@#$%^&*+=|/,<.>?]""", "_");
                     }
                     _logger.LogInformation("ConsiderAutomaticActions(): Recording title={title}", clipTitle);
                     _hyperDeck.StartRecording(clipTitle);
@@ -2017,7 +2045,8 @@ public partial class MainWindow : Window
             if (now >= _secondaryCameraPreviewTime && !_previewedSecondaryCamera)
             {
                 _previewedSecondaryCamera = true;
-                _logger.LogInformation("ConsiderAutomaticActions(): Time to select the secondary camera.");
+                _logger.LogInformation("ConsiderAutomaticActions(): Time to select the secondary camera. (CAM{camno})",
+                    _secondaryCamera);
 
                 // Time to select the secondary camera
                 if (_appSettings.UseAtemConnection
