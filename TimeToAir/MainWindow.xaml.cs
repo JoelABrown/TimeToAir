@@ -27,6 +27,7 @@ namespace Mooseware.TimeToAir;
 // TODO: Implement the remaining v2.0 automationfeatures
 //       - Check the YouTube API and get the event set up if it isn't already
 //         +-> YT app key can go in the app settings.
+// TODO: Consider adding ability to set an on-air deadline without getting it from an API? (e.g. user-entered custom start)
 // TODO: Convert BMD API local loggers to full app logger (maybe keep local if DI comes up empty)
 // TODO: Add logging into places that don't have it yet.
 
@@ -882,10 +883,20 @@ public partial class MainWindow : Window
             + (_nextEventSubtitle.Length > 0  ? " - " : string.Empty)
             + _nextEventSubtitle;
         NextStreamCountdownText.Text = nextStreamEventDescription;
-        if (_onAirTime.Date != DateTime.Now.Date)
+        if (_onAirTime.Date != DateTime.MaxValue)
         {
-            // Include the date in the description
-            NextStreamCountdownText.Text += ": " + _onAirTime.ToString("dddd d MMMM");
+            // Include some appropriate part of the start date in the description
+            string bestDateFormat = "dddd d MMMM h:mmtt";
+            if (_onAirTime.Date.DayOfYear == DateTime.Now.DayOfYear)
+            {
+                bestDateFormat = "h:mmtt";
+            }
+            else if (_onAirTime > DateTime.Now && (DateTime.Now - _onAirTime).TotalDays < 7)
+            {
+                bestDateFormat = "dddd h:mmtt";
+            }
+            // Otherwise stick with the full default
+            NextStreamCountdownText.Text += ": " + _onAirTime.ToString(bestDateFormat);
         }
 
         if (sourceIsApi)
@@ -1875,25 +1886,31 @@ public partial class MainWindow : Window
             AppResources.DefinedColour(AppResources.StaticResource.SelectedPresetBorderBrush)
             : AppResources.DefinedColour(AppResources.StaticResource.LightForegroundBrush);
         // Apply the settings...
+        _logger.LogTrace("ApplySpecificPtzSetup(): Applying settings. Cam1 Pre={cam1} Cam2 Pre={cam2}", cam1Preset, cam2Preset);
         PtzCameraController ptzCam;
         if (IsCam1Connected)
         {
+            _logger.LogTrace("ApplySpecificPtzSetup(): Setting CAM1");
             ptzCam = new(Config.User.Camera1IpAddress);
             ptzCam.RecallPreset(cam1Preset);
             ptzCam.Dispose();
             PtzPresetCamera1Preset.Text = "Preset " + cam1Preset.ToString();
         }
-        if (IsCam1Connected)
+        if (IsCam2Connected)
         {
+            _logger.LogTrace("ApplySpecificPtzSetup(): Setting CAM2");
             ptzCam = new(Config.User.Camera2IpAddress);
             ptzCam.RecallPreset(cam2Preset);
             ptzCam.Dispose();
             PtzPresetCamera2Preset.Text = "Preset " + cam2Preset.ToString();
         }
+        _logger.LogTrace("ApplySpecificPtzSetup(): Setting ATEM");
         if (_appSettings.UseAtemConnection)
         {
+            _logger.LogTrace("ApplySpecificPtzSetup(): IsAtemConnected={parm1} _atem Is Not Null={parm}", IsAtemConnected, (_atem is not null));
             if (IsAtemConnected && _atem is not null)
             {
+                _logger.LogTrace("ApplySpecificPtzSetup(): previewCamera={parm}", previewCamera);
                 if (previewCamera == 1)
                 {
                     _atem.PreviewCamera1();
@@ -2013,6 +2030,8 @@ public partial class MainWindow : Window
                         }
                         // Normalize any non-standard characters out of the filename
                         clipTitle = Regex.Replace(clipTitle, """[{;:'"()~`!@#$%^&*+=|/,<.>?]""", "_");
+                        // Replace any embedded blanks with hyphens...
+                        clipTitle = clipTitle.Replace(' ', '-');
                     }
                     _logger.LogInformation("ConsiderAutomaticActions(): Recording title={title}", clipTitle);
                     _hyperDeck.StartRecording(clipTitle);
@@ -2098,7 +2117,9 @@ public partial class MainWindow : Window
     private void CalculateAutomaticShutdownTime()
     {
         _logger.LogTrace("CalculateAutomaticShutdownTime()");
-        if (Config.User.ShutDownAfterGoLive && _onAirTime > DateTime.Now)
+        if (Config.User.ShutDownAfterGoLive 
+            && _onAirTime != DateTime.MaxValue
+            && _onAirTime > DateTime.Now)
         {
             _autoShutDownTime = _onAirTime.AddSeconds(_appSettings.AutoShutdownTimeout);
         }

@@ -1383,13 +1383,19 @@
                     </Grid.RowDefinitions>
                     <Label Content="Local Recording File Name Template:"
                            Grid.Row="0"
-                           Grid.Column="0" />
-                    <TextBox x:Name="RecordingFileNameTextBox"
-                             Grid.Row="0"
-                             Grid.Column="1"
-                             MaxHeight="21"
-                             Margin="0,2,0,2"
-                             TextChanged="RecordingFileNameTextBox_TextChanged" />
+                           Grid.Column="0"
+                           Margin="0 0 4 0"/>
+                    <StackPanel x:Name="RecordingNameStackPanel"
+                                Orientation="Vertical"
+                                Grid.Row="0"
+                                Grid.Column="1">
+                        <TextBox x:Name="RecordingFileNameTextBox"
+                                 MinHeight="22"
+                                 Margin="2,4,8,0"
+                                 TextChanged="RecordingFileNameTextBox_TextChanged" />
+                        <Label x:Name="RecordingFileNameHint"
+                               Content="These tokens can be used: [title] [yyyymmdd] [hhmm]" />
+                    </StackPanel>
                 </Grid>
                 <Grid x:Name="PtzSetupLayoutGrid"
                       Grid.Row="2"
