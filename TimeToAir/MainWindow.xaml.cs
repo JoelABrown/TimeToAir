@@ -444,13 +444,13 @@ public partial class MainWindow : Window
 
             IsAtemConnected = _atem.IsReady;
 
-            _logger.LogTrace("ConnectToAtem(): CountdownInputReady={status}", _atem.CountdownInputReady);
-            _logger.LogTrace("ConnectToAtem(): InputTitleCardReady={status}", _atem.InputTitleCardReady);
-            _logger.LogTrace("ConnectToAtem(): Input1Ready={status}", _atem.Input1Ready);
-            _logger.LogTrace("ConnectToAtem(): Input2Ready={status}", _atem.Input2Ready);
-            _logger.LogTrace("ConnectToAtem(): AuxOutReady={status}", _atem.AuxOutReady);
-            _logger.LogTrace("ConnectToAtem(): PvwOutReady={status}", _atem.PvwOutReady);
-            _logger.LogTrace("ConnectToAtem(): PgmOutReady={status}", _atem.PgmOutReady);
+            _logger.LogInformation("ConnectToAtem(): CountdownInput ({input}) Ready={status}", _atem.CountdownInput.LongName, _atem.CountdownInputReady);
+            _logger.LogInformation("ConnectToAtem(): InputTitleCard ({input}) Ready={status}", _atem.InputTitleCard.LongName, _atem.InputTitleCardReady);
+            _logger.LogInformation("ConnectToAtem(): Input1 ({input}) Ready={status}", _atem.Input1.LongName, _atem.Input1Ready);
+            _logger.LogInformation("ConnectToAtem(): Input2 ({input}) Ready={status}", _atem.Input2.LongName, _atem.Input2Ready);
+            _logger.LogInformation("ConnectToAtem(): AuxOut ({input}) Ready={status}", _atem.AuxOutput.LongName, _atem.AuxOutReady);
+            _logger.LogInformation("ConnectToAtem(): PvwOut ({input}) Ready={status}", _atem.PvwOutput.LongName, _atem.PvwOutReady);
+            _logger.LogInformation("ConnectToAtem(): PgmOut ({input}) Ready={status}", _atem.PgmOutput.LongName, _atem.PgmOutReady);
 
             // Show the status of various ATEM connections and input discoveries...
             CountdownInputStatusLed.SelectedColour = _atem.CountdownInputReady ? LightEmittingDiode.ColourOptions.Green : LightEmittingDiode.ColourOptions.Red;
@@ -1236,6 +1236,7 @@ public partial class MainWindow : Window
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
         _logger.LogTrace("MainWindow:Window_Closing()");
+        _logger.LogInformation("App closing actions...");
 
         // If we're showing the countdown, then take that down so as not to leave things hanging...
         ToggleRunningStatus(RunAction.ForceStop);
@@ -2006,7 +2007,7 @@ public partial class MainWindow : Window
                     string clipTitle = Config.User.LocalRecordingName;
                     if (string.IsNullOrEmpty(clipTitle))
                     {
-                        clipTitle = "SolelLiveStream_" + _onAirTime.ToString("yyyy-MM-dd_HHmm");
+                        clipTitle = "SolelLiveStream_" + _onAirTime.ToString("yyyy-MM-dd_HH-mm");
                     }
                     else
                     {
@@ -2026,7 +2027,7 @@ public partial class MainWindow : Window
                         }
                         if (clipTitle.Contains("[hhmm]"))
                         {
-                            clipTitle = clipTitle.Replace("[hhmm]", _onAirTime.ToString("HHmm"));
+                            clipTitle = clipTitle.Replace("[hhmm]", _onAirTime.ToString("HH-mm"));
                         }
                         // Normalize any non-standard characters out of the filename
                         clipTitle = Regex.Replace(clipTitle, """[{;:'"()~`!@#$%^&*+=|/,<.>?]""", "_");

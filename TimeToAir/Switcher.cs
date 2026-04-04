@@ -221,7 +221,7 @@ public class Switcher
         _logger.LogInformation("PreviewCamera2()");
         if (IsReady && Input1Ready && PvwOutReady)
         {
-            _atem.SetPreviewInput(Input1.InputID);
+            _atem.SetPreviewInput(Input2.InputID);
         }
     }
 
