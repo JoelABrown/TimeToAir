@@ -373,7 +373,7 @@ namespace Mooseware.TimeToAir.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Solel_[title]_[yyyy-mm-dd]_[hh:mm]_")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Solel_[title]_[yyyymmdd]_[hhmm]")]
         public string LocalRecordingName {
             get {
                 return ((string)(this["LocalRecordingName"]));

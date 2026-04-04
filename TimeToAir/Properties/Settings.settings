@@ -90,7 +90,7 @@
       <Value Profile="(Default)">Join us for the festival of</Value>
     </Setting>
     <Setting Name="LocalRecordingName" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Solel_[title]_[yyyy-mm-dd]_[hh:mm]_</Value>
+      <Value Profile="(Default)">Solel_[title]_[yyyymmdd]_[hhmm]</Value>
     </Setting>
     <Setting Name="PtzSetup1Name" Type="System.String" Scope="User">
       <Value Profile="(Default)">Evening Regular</Value>

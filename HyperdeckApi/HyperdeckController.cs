@@ -218,11 +218,13 @@ namespace Mooseware.Tachnit.BmdHyperdeckController
                 {
                     // Make sure there are no illegal characters in the file
                     // name and that the file has an extension...
-                    string normalizedClipName = string.Join("_", clipName.Split(Path.GetInvalidFileNameChars()));
-                    if (!normalizedClipName.ToLower().EndsWith(".mp4"))
-                    {
-                        normalizedClipName += ".mp4";
-                    }
+                    string normalizedClipName = string.Join("_", clipName.Split(Path.GetInvalidFileNameChars())).Trim();
+                    ////if (!normalizedClipName.ToLower().EndsWith(".mp4"))
+                    ////{
+                    ////    normalizedClipName += ".mp4";
+                    ////}
+                    // Make sure the clip name has an mp4 extension:
+                    Path.ChangeExtension(normalizedClipName, ".mp4");
                     SendCommand("record: name: " + normalizedClipName);
                 }
             }
